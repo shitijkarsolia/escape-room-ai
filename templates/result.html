@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}AI Escape Room — {{ "Escaped!" if breakdown.victory else "Time's Up!" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+     style="--accent-color: {{ {'temple':'#d97706','space':'#06b6d4','haunted':'#a855f7'}[theme] }};
+            --accent-color-alpha: {{ {'temple':'rgba(217,119,6,0.3)','space':'rgba(6,182,212,0.3)','haunted':'rgba(168,85,247,0.3)'}[theme] }};">
+
+    <!-- Result header -->
+    <div class="text-center mb-10 animate-fade-in">
+        {% if breakdown.victory %}
+        <div class="text-7xl mb-4 animate-float">🎉</div>
+        <h1 class="text-5xl font-black mb-2">
+            <span class="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+                YOU ESCAPED!
+            </span>
+        </h1>
+        <p class="text-gray-400 text-lg">Congratulations! You solved all puzzles in the {{ theme_data.name }}.</p>
+        {% else %}
+        <div class="text-7xl mb-4">⏰</div>
+        <h1 class="text-5xl font-black mb-2">
+            <span class="bg-gradient-to-r from-red-400 to-rose-500 bg-clip-text text-transparent">
+                TIME'S UP!
+            </span>
+        </h1>
+        <p class="text-gray-400 text-lg">The {{ theme_data.name }} claimed another soul...</p>
+        {% endif %}
+    </div>
+
+    <!-- Score card -->
+    <div class="w-full max-w-lg bg-gray-900/80 backdrop-blur border border-gray-800 rounded-2xl p-8 mb-8 animate-fade-in">
+        <!-- Total score -->
+        <div class="text-center mb-6 pb-6 border-b border-gray-800">
+            <div class="text-sm text-gray-500 uppercase tracking-widest mb-1">Final Score</div>
+            <div class="text-6xl font-black" style="color: var(--accent-color);">{{ breakdown.total_score }}</div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ breakdown.puzzles_solved }}/{{ breakdown.total_puzzles }}</div>
+                <div class="text-xs text-gray-500 mt-1">Puzzles Solved</div>
+            </div>
+            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ (breakdown.total_time / 60) | round(1) }}m</div>
+                <div class="text-xs text-gray-500 mt-1">Total Time</div>
+            </div>
+            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ breakdown.total_hints }}</div>
+                <div class="text-xs text-gray-500 mt-1">Hints Used</div>
+            </div>
+            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ (breakdown.time_penalties / 60) | round(1) }}m</div>
+                <div class="text-xs text-gray-500 mt-1">Time Penalties</div>
+            </div>
+        </div>
+
+        <!-- Puzzle breakdown -->
+        <div class="space-y-2">
+            <div class="text-sm text-gray-500 uppercase tracking-widest mb-3">Puzzle Breakdown</div>
+            {% for p in breakdown.puzzle_details %}
+            <div class="flex items-center justify-between bg-gray-800/30 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">{{ '✅' if p.solved else '❌' }}</span>
+                    <div>
+                        <span class="text-sm font-medium text-white">Puzzle {{ p.number }}</span>
+                        <span class="text-xs text-gray-500 ml-2 uppercase">{{ p.type }}</span>
+                    </div>
+                </div>
+                <div class="text-right text-sm">
+                    {% if p.solved %}
+                    <span class="text-gray-300">{{ p.solve_time }}s</span>
+                    <span class="text-gray-600 mx-1">&bull;</span>
+                    <span class="text-gray-400">{{ p.attempts }} attempt{{ 's' if p.attempts != 1 else '' }}</span>
+                    {% if p.hints_used > 0 %}
+                    <span class="text-gray-600 mx-1">&bull;</span>
+                    <span class="text-amber-400">{{ p.hints_used }} hint{{ 's' if p.hints_used != 1 else '' }}</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="text-gray-600">Not solved</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex gap-4 animate-fade-in">
+        <a href="/"
+           class="px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
+           style="background-color: var(--accent-color); color: #111827;">
+            Play Again
+        </a>
+    </div>
+
+    <!-- Powered by -->
+    <div class="text-center text-gray-600 text-sm mt-12">
+        <p>Powered by <span class="text-gray-400 font-semibold">Gemini 3</span> &mdash; every puzzle is uniquely generated</p>
+    </div>
+</div>
+{% endblock %}

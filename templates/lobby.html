@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}AI Escape Room — Choose Your Fate{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+    <!-- Title -->
+    <div class="text-center mb-12 animate-fade-in">
+        <h1 class="text-6xl font-black tracking-tight mb-3">
+            <span class="bg-gradient-to-r from-amber-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                AI ESCAPE ROOM
+            </span>
+        </h1>
+        <p class="text-gray-400 text-lg max-w-md mx-auto">
+            Powered by Gemini 3. Every puzzle is unique. Every playthrough is different. Can you escape?
+        </p>
+    </div>
+
+    <!-- Theme cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-8">
+        {% for key, theme in themes.items() %}
+        <button
+            onclick="selectTheme('{{ key }}')"
+            class="theme-card group relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/80 backdrop-blur p-8 text-left transition-all duration-300 hover:scale-[1.03] hover:border-{{ theme.accent }}-500/50 focus:outline-none focus:ring-2 focus:ring-{{ theme.accent }}-500/50"
+            data-theme="{{ key }}"
+        >
+            <!-- Accent glow -->
+            <div class="absolute inset-0 bg-gradient-to-br from-{{ theme.accent }}-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <div class="relative z-10">
+                <span class="text-5xl mb-4 block">{{ theme.icon }}</span>
+                <h2 class="text-2xl font-bold mb-2 text-white group-hover:text-{{ theme.accent }}-400 transition-colors">
+                    {{ theme.name }}
+                </h2>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    {{ theme.tagline }}
+                </p>
+            </div>
+
+            <!-- Bottom accent bar -->
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-{{ theme.accent }}-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+        </button>
+        {% endfor %}
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="hidden flex flex-col items-center gap-4">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-gray-700 border-t-cyan-400 rounded-full animate-spin"></div>
+        </div>
+        <p class="text-gray-400 text-lg" id="loading-text">Generating your escape room...</p>
+    </div>
+
+    <!-- Footer info -->
+    <div class="text-center text-gray-600 text-sm mt-8">
+        <p>5 puzzles per room &bull; 15 minute timer &bull; Hints cost 60 seconds</p>
+    </div>
+</div>
+
+<script>
+async function selectTheme(theme) {
+    // Hide cards, show loading
+    document.querySelectorAll('.theme-card').forEach(c => {
+        c.disabled = true;
+        c.style.pointerEvents = 'none';
+        if (c.dataset.theme !== theme) {
+            c.style.opacity = '0.3';
+        }
+    });
+    document.getElementById('loading').classList.remove('hidden');
+
+    const messages = [
+        'Generating your escape room...',
+        'Crafting puzzles with Gemini 3...',
+        'Building the first challenge...',
+        'Almost ready...'
+    ];
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+        msgIdx = (msgIdx + 1) % messages.length;
+        document.getElementById('loading-text').textContent = messages[msgIdx];
+    }, 2000);
+
+    try {
+        const resp = await fetch('/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme }),
+        });
+        const data = await resp.json();
+        clearInterval(msgInterval);
+
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.error || 'Failed to start game');
+            window.location.reload();
+        }
+    } catch (err) {
+        clearInterval(msgInterval);
+        alert('Connection error. Please try again.');
+        window.location.reload();
+    }
+}
+</script>
+{% endblock %}
