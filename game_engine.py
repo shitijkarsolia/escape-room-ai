@@ -276,6 +276,36 @@ class GameEngine:
 
         return state
 
+    def skip_puzzle(self, state: GameState) -> tuple:
+        """Skip the current puzzle. Returns (state, result_dict) with the answer revealed."""
+        puzzle = state.current_puzzle
+        if not puzzle:
+            return state, {"error": "No active puzzle."}
+
+        answer = puzzle.answer
+        puzzle.solved = False
+        puzzle.solve_time = 0
+        state.update_current_puzzle(puzzle)
+
+        # Check if game is complete
+        if state.current_puzzle_index + 1 >= TOTAL_PUZZLES:
+            state.status = "victory"
+            return state, {
+                "skipped": True,
+                "answer": answer,
+                "game_complete": True,
+                "total_score": state.score,
+            }
+
+        # Move to next puzzle
+        state.current_puzzle_index += 1
+
+        return state, {
+            "skipped": True,
+            "answer": answer,
+            "next_puzzle": True,
+        }
+
     def _adjust_difficulty(self, state: GameState, puzzle: PuzzleState) -> GameState:
         """Adjust difficulty based on player performance."""
         if puzzle.solve_time < 30 and puzzle.hints_used == 0:

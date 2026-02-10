@@ -22,15 +22,15 @@
         </p>
     </div>
 
-    <!-- Classic Rooms Section -->
+    <!-- TV Shows & Movies Section -->
     <div class="mb-14 animate-fade-in">
         <div class="flex items-center gap-3 mb-6">
-            <h2 class="font-display text-xl font-semibold text-white">Classic Rooms</h2>
+            <h2 class="font-display text-xl font-semibold text-white">TV Shows & Movies</h2>
             <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for key, theme in themes.items() %}
-            {% if theme.category == 'classic' %}
+            {% if theme.category == 'tvshow' %}
             <button onclick="selectTheme('{{ key }}')" data-theme="{{ key }}"
                 class="theme-card group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 text-left transition-all duration-500 hover:border-white/[0.12] hover:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-white/20">
                 <!-- Gradient orb -->
@@ -54,36 +54,33 @@
         </div>
     </div>
 
-    <!-- TV Shows Section -->
+    <!-- Make Your Own Section -->
     <div class="mb-14 animate-fade-in-delay">
         <div class="flex items-center gap-3 mb-6">
-            <h2 class="font-display text-xl font-semibold text-white">TV Shows & Movies</h2>
+            <h2 class="font-display text-xl font-semibold text-white">Make Your Own</h2>
             <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
-            <span class="text-xs font-medium text-gray-500 bg-white/5 px-3 py-1 rounded-full border border-white/10">NEW</span>
+            <span class="text-xs font-medium text-gray-500 bg-white/5 px-3 py-1 rounded-full border border-white/10">MULTIMODAL</span>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for key, theme in themes.items() %}
-            {% if theme.category == 'tvshow' %}
-            <button onclick="selectTheme('{{ key }}')" data-theme="{{ key }}"
-                class="theme-card group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 text-left transition-all duration-500 hover:border-white/[0.12] hover:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-white/20">
-                <!-- Gradient orb -->
-                <div class="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-700 blur-3xl"
-                     style="background: {{ theme.gradient_to }};"></div>
-                <div class="relative z-10">
-                    <span class="text-4xl mb-3 block filter drop-shadow-lg">{{ theme.icon }}</span>
-                    <h3 class="font-display text-lg font-semibold text-white mb-1 group-hover:text-gray-100 transition-colors">
-                        {{ theme.name }}
-                    </h3>
-                    <p class="text-gray-500 text-sm leading-relaxed group-hover:text-gray-400 transition-colors">
-                        {{ theme.tagline }}
+        <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-3xl">📷</span>
+                        <h3 class="font-display text-lg font-semibold text-white">Upload an Image</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-4">
+                        Upload any photo and Gemini 3 will analyze it to create a full escape room with 5 unique visual puzzles based on what it sees. Works with anything — a room, a drawing, a meme, a screenshot.
                     </p>
+                    <div class="flex gap-3 items-center">
+                        <input type="file" id="custom-image-input" accept="image/*"
+                            class="flex-1 text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-white/[0.06] file:text-gray-300 hover:file:bg-white/10 file:transition-colors file:cursor-pointer">
+                        <button onclick="startCustomGame()"
+                            class="px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-[#09090b] bg-indigo-500 hover:brightness-110 active:scale-95 transition-all whitespace-nowrap">
+                            Generate Room
+                        </button>
+                    </div>
                 </div>
-                <!-- Bottom accent -->
-                <div class="absolute bottom-0 left-0 right-0 h-[2px] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"
-                     style="background: linear-gradient(90deg, {{ theme.gradient_from }}, {{ theme.gradient_to }});"></div>
-            </button>
-            {% endif %}
-            {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -116,19 +113,7 @@ async function selectTheme(theme) {
             c.style.borderColor = 'rgba(255,255,255,0.2)';
         }
     });
-    document.getElementById('loading').classList.remove('hidden');
-
-    const messages = [
-        'Generating your escape room...',
-        'Crafting puzzles with Gemini 3...',
-        'Building the first challenge...',
-        'Almost ready...'
-    ];
-    let msgIdx = 0;
-    const msgInterval = setInterval(() => {
-        msgIdx = (msgIdx + 1) % messages.length;
-        document.getElementById('loading-text').textContent = messages[msgIdx];
-    }, 2500);
+    showLoading();
 
     try {
         const resp = await fetch('/start', {
@@ -137,7 +122,6 @@ async function selectTheme(theme) {
             body: JSON.stringify({ theme }),
         });
         const data = await resp.json();
-        clearInterval(msgInterval);
         if (data.success) {
             window.location.href = data.redirect;
         } else {
@@ -145,10 +129,54 @@ async function selectTheme(theme) {
             window.location.reload();
         }
     } catch (err) {
-        clearInterval(msgInterval);
         alert('Connection error. Please try again.');
         window.location.reload();
     }
+}
+
+async function startCustomGame() {
+    const fileInput = document.getElementById('custom-image-input');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please select an image first.');
+        return;
+    }
+    showLoading();
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const resp = await fetch('/start-custom', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await resp.json();
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.error || 'Failed to create custom room. Try again.');
+            window.location.reload();
+        }
+    } catch (err) {
+        alert('Connection error. Please try again.');
+        window.location.reload();
+    }
+}
+
+function showLoading() {
+    document.getElementById('loading').classList.remove('hidden');
+    const messages = [
+        'Generating your escape room...',
+        'Crafting puzzles with Gemini 3...',
+        'Building the first challenge...',
+        'Almost ready...'
+    ];
+    let msgIdx = 0;
+    setInterval(() => {
+        msgIdx = (msgIdx + 1) % messages.length;
+        document.getElementById('loading-text').textContent = messages[msgIdx];
+    }, 2500);
 }
 </script>
 {% endblock %}

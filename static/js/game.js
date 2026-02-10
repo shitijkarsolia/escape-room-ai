@@ -108,36 +108,39 @@ async function requestHint() {
 }
 
 // ---------------------------------------------------------------------------
-// Image Upload
+// Skip Puzzle
 // ---------------------------------------------------------------------------
-function toggleImageUpload() {
-    document.getElementById('image-upload-panel').classList.toggle('hidden');
-}
-
-async function uploadClue() {
-    const file = document.getElementById('image-input').files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('image', file);
-    const btn = document.querySelector('#image-upload-panel button');
-    btn.disabled = true; btn.textContent = 'Analyzing...';
+async function skipPuzzle() {
+    const btn = document.getElementById('skip-btn');
+    btn.disabled = true;
     try {
-        const resp = await fetch('/upload-clue', { method: 'POST', body: formData });
+        const resp = await fetch('/skip', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await resp.json();
-        if (data.success && data.puzzle) {
-            document.getElementById('puzzle-question').textContent = data.puzzle.question;
-            document.getElementById('puzzle-type').textContent = 'visual';
-            if (data.narrative_log?.length) {
-                document.getElementById('narrative-text').textContent = data.narrative_log[data.narrative_log.length - 1];
-            }
-            document.getElementById('image-upload-panel').classList.add('hidden');
+        if (data.time_up) { window.location.href = data.redirect; return; }
+        if (data.redirect) {
+            // Show answer then redirect
+            const skipPanel = document.getElementById('skip-panel');
+            document.getElementById('skip-answer').textContent = data.answer;
+            skipPanel.classList.remove('hidden');
+            setTimeout(() => { window.location.href = data.redirect; }, 2000);
+            return;
+        }
+        if (data.skipped) {
+            // Show the answer briefly
+            const skipPanel = document.getElementById('skip-panel');
+            document.getElementById('skip-answer').textContent = data.answer;
+            skipPanel.classList.remove('hidden');
             document.getElementById('hint-panel').classList.add('hidden');
-            document.getElementById('answer-input').value = '';
-            document.getElementById('answer-input').focus();
-            animatePuzzleCard();
-        } else { alert(data.error || 'Failed to analyze image'); }
-    } catch (err) { alert('Upload failed. Please try again.'); }
-    finally { btn.disabled = false; btn.textContent = 'Analyze'; }
+            document.getElementById('feedback').classList.add('hidden');
+
+            // Transition to next puzzle after showing the answer
+            setTimeout(() => {
+                skipPanel.classList.add('hidden');
+                if (data.puzzle) transitionToPuzzle(data);
+            }, 2000);
+        }
+    } catch (err) { console.error('Skip error:', err); }
+    finally { btn.disabled = false; }
 }
 
 // ---------------------------------------------------------------------------

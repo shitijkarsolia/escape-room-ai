@@ -89,27 +89,12 @@
                 <span>Get Hint</span>
                 <span class="text-gray-600 text-xs ml-1">-60s</span>
             </button>
-            <button onclick="toggleImageUpload()" id="upload-btn"
+            <button onclick="skipPuzzle()" id="skip-btn"
                 class="flex-1 rounded-xl px-4 py-3 text-sm font-medium bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-center gap-2">
-                <span>📷</span>
-                <span>Upload Clue</span>
+                <span>⏭️</span>
+                <span>Skip</span>
+                <span class="text-gray-600 text-xs ml-1">0 pts</span>
             </button>
-        </div>
-
-        <!-- Image upload panel -->
-        <div id="image-upload-panel" class="hidden w-full mb-6 animate-slide-in-right">
-            <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-                <p class="text-gray-500 text-sm mb-3">Upload an image and Gemini 3 will create a visual puzzle from it.</p>
-                <div class="flex gap-3">
-                    <input type="file" id="image-input" accept="image/*"
-                        class="flex-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-white/[0.06] file:text-gray-300 hover:file:bg-white/10 file:transition-colors">
-                    <button onclick="uploadClue()"
-                        class="px-5 py-2 rounded-lg font-semibold text-sm text-[#09090b] transition-all hover:brightness-110"
-                        style="background: var(--accent);">
-                        Analyze
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- Hint panel -->
@@ -121,6 +106,15 @@
                 </div>
                 <p id="hint-text" class="text-gray-300 leading-relaxed"></p>
                 <p id="hint-encouragement" class="text-gray-600 text-sm mt-2 italic"></p>
+            </div>
+        </div>
+
+        <!-- Skip confirmation -->
+        <div id="skip-panel" class="hidden w-full mb-6 animate-slide-in-right">
+            <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+                <p class="text-gray-400 text-sm mb-1">The answer was:</p>
+                <p id="skip-answer" class="font-display text-lg font-semibold text-white mb-2"></p>
+                <p class="text-gray-600 text-xs">No points awarded. Moving to next puzzle...</p>
             </div>
         </div>
     </div>

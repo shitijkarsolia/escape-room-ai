@@ -6,54 +6,6 @@ from typing import Dict, List, Optional
 # Theme descriptions used across prompts
 # ---------------------------------------------------------------------------
 THEME_DESCRIPTIONS = {
-    # ---- Classic Escape Rooms ----
-    "temple": {
-        "name": "Ancient Temple",
-        "tagline": "Lost ruins hide secrets older than time itself.",
-        "category": "classic",
-        "setting": (
-            "You are trapped inside an ancient temple deep in a forgotten jungle. "
-            "Crumbling stone walls are covered in mysterious glyphs. Torchlight flickers "
-            "across golden artifacts and vine-covered passageways. The air smells of dust "
-            "and ancient incense. Every puzzle you solve opens the next sealed chamber, "
-            "bringing you closer to the temple's exit."
-        ),
-        "icon": "🏛️",
-        "accent": "amber",
-        "gradient_from": "#92400e",
-        "gradient_to": "#d97706",
-    },
-    "space": {
-        "name": "Space Station",
-        "tagline": "Oxygen is running out. Solve fast or drift forever.",
-        "category": "classic",
-        "setting": (
-            "You are stranded on an abandoned orbital space station. Emergency lights "
-            "pulse red. Holographic displays glitch with fragmented data. The airlock "
-            "timer is counting down. Each puzzle you solve restores a subsystem, "
-            "bringing the escape pod back online. The void of space waits outside "
-            "every window."
-        ),
-        "icon": "🚀",
-        "accent": "cyan",
-        "gradient_from": "#164e63",
-        "gradient_to": "#06b6d4",
-    },
-    "haunted": {
-        "name": "Haunted Mansion",
-        "tagline": "The doors locked behind you. The ghosts know you're here.",
-        "category": "classic",
-        "setting": (
-            "You are trapped inside a Victorian mansion that hasn't seen sunlight in decades. "
-            "Portraits watch you with moving eyes. Floorboards creak with phantom footsteps. "
-            "Candles light themselves in empty rooms. Each puzzle you solve unlocks the next "
-            "cursed chamber. Solve them all before midnight, or become the mansion's newest ghost."
-        ),
-        "icon": "👻",
-        "accent": "purple",
-        "gradient_from": "#581c87",
-        "gradient_to": "#a855f7",
-    },
     # ---- TV Shows & Movies ----
     "theoffice": {
         "name": "The Office",
@@ -74,7 +26,7 @@ THEME_DESCRIPTIONS = {
     },
     "friends": {
         "name": "Friends",
-        "tagline": "Could this BE any harder? The one where you're trapped in Central Perk.",
+        "tagline": "Could this BE any harder? The one where you're trapped.",
         "category": "tvshow",
         "setting": (
             "You are locked inside Central Perk after closing time. The orange couch holds a hidden message. "
@@ -106,6 +58,73 @@ THEME_DESCRIPTIONS = {
         "accent": "red",
         "gradient_from": "#7f1d1d",
         "gradient_to": "#dc2626",
+    },
+    "parksandrec": {
+        "name": "Parks & Rec",
+        "tagline": "Treat yo'self to an escape. Leslie Knope left the clues.",
+        "category": "tvshow",
+        "setting": (
+            "You are trapped inside Pawnee City Hall after a government shutdown locked all the doors. "
+            "Leslie Knope, ever prepared, left an elaborate puzzle trail in case this ever happened. "
+            "Clues are hidden in Ron Swanson's secret workshop, April's creepy drawer of mysterious objects, "
+            "Tom Haverford's Entertainment 720 pitch decks, Andy's shoebox of 'important documents,' "
+            "and the Pawnee Parks Department binders. Li'l Sebastian's memorial holds the final clue. "
+            "Every puzzle references Pawnee's absurd town meetings, waffles, and the greatest small town in America."
+        ),
+        "icon": "🌳",
+        "accent": "green",
+        "gradient_from": "#14532d",
+        "gradient_to": "#22c55e",
+    },
+    "bigbang": {
+        "name": "Big Bang Theory",
+        "tagline": "Bazinga! You're trapped in Apartment 4A.",
+        "category": "tvshow",
+        "setting": (
+            "You are locked inside Sheldon and Leonard's apartment, 4A. Sheldon has activated his "
+            "'Roommate Agreement Emergency Protocol' which sealed all exits. The only way out is to solve "
+            "his gauntlet of puzzles involving quantum physics riddles, comic book trivia encoded in "
+            "Klingon, a cipher hidden in Soft Kitty lyrics, math problems on his whiteboard, "
+            "Howard's engineering schematics with hidden messages, and Raj's star charts pointing to escape coordinates. "
+            "Every puzzle requires the kind of nerd knowledge Sheldon would approve of."
+        ),
+        "icon": "🧪",
+        "accent": "teal",
+        "gradient_from": "#134e4a",
+        "gradient_to": "#14b8a6",
+    },
+    "breakingbad": {
+        "name": "Breaking Bad",
+        "tagline": "Say my name. Then solve your way out.",
+        "category": "tvshow",
+        "setting": (
+            "You are trapped in the underground superlab beneath the Lavandería Brillante laundry. "
+            "Walter White left behind a series of chemistry-based puzzles as a dead man's switch. "
+            "Clues involve the periodic table elements spelling hidden words, chemical formulas "
+            "that decode to map coordinates, Heisenberg's blue crystal purity percentages hiding messages, "
+            "Saul Goodman's business cards with coded phone numbers, and Gus Fring's Los Pollos Hermanos "
+            "menu concealing an escape route. Every puzzle channels the show's themes of science, "
+            "deception, and the danger of the drug trade."
+        ),
+        "icon": "🧬",
+        "accent": "lime",
+        "gradient_from": "#365314",
+        "gradient_to": "#84cc16",
+    },
+    # ---- Custom (image-based) ----
+    "custom": {
+        "name": "Your Image",
+        "tagline": "Upload a photo and Gemini 3 creates puzzles from it.",
+        "category": "custom",
+        "setting": (
+            "The player has uploaded their own image. Create puzzles that creatively "
+            "incorporate elements visible in the image. Tie the visual details into "
+            "an engaging mini escape room narrative."
+        ),
+        "icon": "📷",
+        "accent": "indigo",
+        "gradient_from": "#312e81",
+        "gradient_to": "#6366f1",
     },
 }
 

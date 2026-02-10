@@ -206,13 +206,9 @@ def get_hint():
     })
 
 
-@app.route("/upload-clue", methods=["POST"])
-def upload_clue():
-    """Upload an image for a multimodal puzzle."""
-    state = get_game_state()
-    if not state or state.status != "playing":
-        return jsonify({"error": "No active game"}), 400
-
+@app.route("/start-custom", methods=["POST"])
+def start_custom_game():
+    """Start a custom game from an uploaded image."""
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
 
@@ -222,17 +218,57 @@ def upload_clue():
 
     try:
         image = Image.open(io.BytesIO(file.read()))
+        state = engine.start_game("custom")
         state = engine.generate_image_puzzle(state, image)
         save_game_state(state)
 
-        puzzle = state.current_puzzle
         return jsonify({
             "success": True,
-            "puzzle": puzzle.to_dict() if puzzle else None,
-            "narrative_log": state.narrative_log,
+            "redirect": url_for("room"),
         })
     except Exception as e:
-        return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
+        app.logger.error("Failed to start custom game: %s", e)
+        return jsonify({"error": f"AI is busy — please try again. ({type(e).__name__})"}), 503
+
+
+@app.route("/skip", methods=["POST"])
+def skip_puzzle():
+    """Skip the current puzzle (0 points, answer revealed)."""
+    state = get_game_state()
+    if not state or state.status != "playing":
+        return jsonify({"error": "No active game"}), 400
+
+    if state.is_time_up:
+        state.status = "defeat"
+        save_game_state(state)
+        return jsonify({"time_up": True, "redirect": url_for("result")})
+
+    state, result = engine.skip_puzzle(state)
+
+    if result.get("game_complete"):
+        save_game_state(state)
+        return jsonify({**result, "redirect": url_for("result")})
+
+    if result.get("next_puzzle"):
+        try:
+            state = engine.generate_puzzle(state)
+        except Exception as e:
+            app.logger.error("Puzzle generation after skip failed: %s", e)
+            save_game_state(state)
+            return jsonify({**result, "error_generating": True})
+
+        save_game_state(state)
+        puzzle = state.current_puzzle
+        return jsonify({
+            **result,
+            "puzzle": puzzle.to_dict() if puzzle else None,
+            "puzzle_number": state.current_puzzle_index + 1,
+            "remaining_seconds": state.remaining_seconds,
+            "narrative_log": state.narrative_log,
+        })
+
+    save_game_state(state)
+    return jsonify(result)
 
 
 @app.route("/time-check", methods=["POST"])
