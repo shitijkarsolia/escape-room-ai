@@ -9,4 +9,7 @@ dependencies = [
     "pillow",
     "gunicorn",
     "python-dotenv",
+    "requests>=2.32.5",
+    "flask-wtf>=1.2.2",
+    "flask-limiter>=4.1.1",
 ]

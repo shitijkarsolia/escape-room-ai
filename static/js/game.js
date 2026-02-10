@@ -147,6 +147,26 @@ const THEME_DATA = {
     },
 };
 
+// ---------------------------------------------------------------------------
+// CSRF token helper (Fix #3)
+// ---------------------------------------------------------------------------
+function getCSRFToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function csrfHeaders(extra) {
+    return Object.assign({
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+    }, extra || {});
+}
+
+// ---------------------------------------------------------------------------
+// Reveal-blocks-submit state (Fix #2)
+// ---------------------------------------------------------------------------
+let answerRevealed = false;
+
 // Get current theme from body class
 function getCurrentTheme() {
     const body = document.querySelector('[class*="room-"]');
@@ -277,7 +297,99 @@ function showVictoryCelebration() {
 }
 
 // ---------------------------------------------------------------------------
-// Loading Overlay (between puzzles)
+// Theme Factoids — fun trivia shown during loading transitions
+// ---------------------------------------------------------------------------
+const THEME_FACTOIDS = {
+    theoffice: [
+        { emoji: '📎', text: "Dwight's desk has been encased in Jell-O at least 3 times." },
+        { emoji: '🥨', text: "Stanley's pretzel day is based on a real office tradition the writers had." },
+        { emoji: '☕', text: "Steve Carell improvised 'That\'s what she said' so often it became Michael's catchphrase." },
+        { emoji: '🖨️', text: "The Dunder Mifflin paper company was so convincing, people actually tried to order paper from them." },
+        { emoji: '🎸', text: "Creed Bratton's character is named after the real actor — who was in a 60s rock band." },
+        { emoji: '🏆', text: "The Dundie Awards were inspired by real office award ceremonies the writers attended." },
+        { emoji: '📋', text: "Rainn Wilson auditioned for the role of Michael Scott before being cast as Dwight." },
+        { emoji: '🐻', text: "Bears. Beets. Battlestar Galactica. — Jim's most iconic Dwight impression." },
+    ],
+    friends: [
+        { emoji: '☕', text: "The orange couch in Central Perk was found in the Warner Bros. studio basement." },
+        { emoji: '🦞', text: "Phoebe's 'Smelly Cat' was almost a real single release." },
+        { emoji: '🍕', text: "Joey's 'How you doin'?' was improvised by Matt LeBlanc during rehearsal." },
+        { emoji: '🛋️', text: "The apartment numbers changed from 4 & 5 to 19 & 20 after the crew realized they lived too high up." },
+        { emoji: '💍', text: "Monica and Chandler's relationship wasn't planned — the audience reaction made it happen." },
+        { emoji: '🦃', text: "The Thanksgiving episodes became a tradition after the first one was a massive hit." },
+        { emoji: '👏', text: "The iconic clapping intro was filmed at a fountain at Warner Bros. at 4 AM." },
+        { emoji: '🧬', text: "Ross has been divorced three times — a running gag the writers loved." },
+    ],
+    got: [
+        { emoji: '🐉', text: "Daenerys's dragons were named after her husband and brothers." },
+        { emoji: '⚔️', text: "The Iron Throne in the books is described as much larger — over 200 swords." },
+        { emoji: '🐺', text: "The Stark direwolves were played by Northern Inuit dogs." },
+        { emoji: '👑', text: "George R.R. Martin has a cameo in the pilot's original unaired version." },
+        { emoji: '🏰', text: "Dubrovnik, Croatia doubled as King's Landing for most of the series." },
+        { emoji: '🔥', text: "Emilia Clarke actually ate a real heart-shaped cake for the horse heart scene." },
+        { emoji: '❄️', text: "The Night's Watch oath was inspired by real medieval monastic vows." },
+        { emoji: '🗡️', text: "Arya's sword Needle was named because Arya hated needlework." },
+    ],
+    parksandrec: [
+        { emoji: '🧇', text: "Leslie Knope's love of waffles was inspired by Amy Poehler's real breakfast habits." },
+        { emoji: '🐴', text: "Li'l Sebastian was played by a miniature horse named Gideon." },
+        { emoji: '🌳', text: "Pawnee, Indiana is fictional, but the show used real Indiana town quirks." },
+        { emoji: '🥩', text: "Ron Swanson's love of meat is real — Nick Offerman is an avid woodworker and carnivore." },
+        { emoji: '🏛️', text: "The Parks Department set was built on the same stage as Cheers." },
+        { emoji: '⭐', text: "Chris Pratt improvised the line about falling in the pit — it became a song." },
+        { emoji: '📝', text: "Ben's accounting puns were written by a real accountant consultant." },
+        { emoji: '🎉', text: "Treat Yo Self day (October 13th) is celebrated by fans worldwide." },
+    ],
+    bigbang: [
+        { emoji: '⚛️', text: "A real UCLA physicist, David Saltzberg, reviewed every script for accuracy." },
+        { emoji: '🚀', text: "Howard actually went to space — the ISS scenes used real NASA footage as reference." },
+        { emoji: '🎮', text: "The apartment number 4A is a nod to the show being on at 8pm (4A in military time)." },
+        { emoji: '🧪', text: "Sheldon's knock pattern (3 knocks) was Jim Parsons' improvisation that stuck." },
+        { emoji: '🤓', text: "Mayim Bialik (Amy) has a real PhD in neuroscience." },
+        { emoji: '🎸', text: "The theme song by Barenaked Ladies was written specifically for the show." },
+        { emoji: '🔬', text: "The equations on the whiteboards are real and change every episode." },
+        { emoji: '🏆', text: "Jim Parsons won 4 Emmy Awards for playing Sheldon Cooper." },
+    ],
+    breakingbad: [
+        { emoji: '🧬', text: "Bryan Cranston actually learned to cook (fake) meth for authenticity." },
+        { emoji: '💎', text: "The blue meth was actually blue rock candy made by a professional candy maker." },
+        { emoji: '🏜️', text: "Albuquerque, NM gave the show tax incentives — making it a character itself." },
+        { emoji: '🔵', text: "Walter White's name combines Walt Whitman and a play on 'white' for his double life." },
+        { emoji: '💰', text: "Jesse Pinkman was supposed to die in Season 1 but Aaron Paul was too good." },
+        { emoji: '🧪', text: "The show's chemical formulas are scientifically accurate (mostly)." },
+        { emoji: '🚐', text: "The RV used for cooking was a 1986 Fleetwood Bounder." },
+        { emoji: '🎩', text: "Heisenberg's hat was Bryan Cranston's idea to distinguish Walt's alter ego." },
+    ],
+    supernatural: [
+        { emoji: '🚗', text: "The Impala (Baby) is a 1967 Chevrolet — the show used 9 different ones." },
+        { emoji: '😈', text: "Mark Sheppard (Crowley) holds the record for most sci-fi/fantasy show appearances." },
+        { emoji: '👼', text: "Castiel was only supposed to appear in 6 episodes but became a series regular." },
+        { emoji: '🔥', text: "The show ran for 15 seasons — one of the longest-running sci-fi series ever." },
+        { emoji: '🗡️', text: "Dean's love of pie is based on Jensen Ackles' real-life pie obsession." },
+        { emoji: '⭐', text: "The anti-possession tattoos became one of the most popular fan tattoos." },
+        { emoji: '📖', text: "John Winchester's journal was published as an actual book fans can buy." },
+        { emoji: '🎵', text: "'Carry On Wayward Son' by Kansas became the unofficial show anthem." },
+    ],
+    custom: [
+        { emoji: '🧠', text: "AI image recognition can identify over 10,000 distinct object categories." },
+        { emoji: '🎨', text: "The human eye can distinguish about 10 million different colors." },
+        { emoji: '📷', text: "The first digital photograph was taken in 1957 — it was a baby picture." },
+        { emoji: '✨', text: "Your brain processes images in as little as 13 milliseconds." },
+        { emoji: '🌟', text: "Escape rooms originated in Japan in 2007 and spread worldwide." },
+        { emoji: '🔐', text: "The most popular escape room theme worldwide is 'prison break'." },
+        { emoji: '💡', text: "The average escape room has a 30-40% success rate." },
+        { emoji: '🧩', text: "The word 'puzzle' comes from the Middle English 'pusle' meaning to bewilder." },
+    ],
+};
+
+function getRandomFactoid() {
+    const theme = getCurrentTheme() || 'custom';
+    const factoids = THEME_FACTOIDS[theme] || THEME_FACTOIDS.custom;
+    return factoids[Math.floor(Math.random() * factoids.length)];
+}
+
+// ---------------------------------------------------------------------------
+// Loading Overlay (between puzzles) — with dynamic factoids
 // ---------------------------------------------------------------------------
 const LOADING_MESSAGES = [
     'Generating next puzzle...',
@@ -289,33 +401,112 @@ const LOADING_MESSAGES = [
 
 function showPuzzleLoading() {
     let overlay = document.getElementById('puzzle-loading');
+    const factoid = getRandomFactoid();
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'puzzle-loading';
-        overlay.innerHTML = `
-            <div class="puzzle-loading-content">
-                <div class="puzzle-loading-spinner"></div>
-                <p class="puzzle-loading-text">${LOADING_MESSAGES[0]}</p>
-                <div class="puzzle-loading-dots"><span>.</span><span>.</span><span>.</span></div>
-            </div>`;
         document.body.appendChild(overlay);
     }
+    overlay.innerHTML = `
+        <div class="puzzle-loading-content">
+            <div class="puzzle-loading-spinner"></div>
+            <p class="puzzle-loading-text">${LOADING_MESSAGES[0]}</p>
+            <div class="puzzle-loading-dots"><span>.</span><span>.</span><span>.</span></div>
+            <div class="factoid-card">
+                <div class="factoid-emoji">${factoid.emoji}</div>
+                <p class="factoid-label">Did you know?</p>
+                <p class="factoid-text">${factoid.text}</p>
+            </div>
+        </div>`;
     overlay.classList.remove('hidden');
-    // Cycle messages
-    let idx = 0;
+
+    // Cycle loading messages
+    let msgIdx = 0;
     overlay._msgInterval = setInterval(() => {
-        idx = (idx + 1) % LOADING_MESSAGES.length;
+        msgIdx = (msgIdx + 1) % LOADING_MESSAGES.length;
         const txt = overlay.querySelector('.puzzle-loading-text');
-        if (txt) txt.textContent = LOADING_MESSAGES[idx];
+        if (txt) txt.textContent = LOADING_MESSAGES[msgIdx];
     }, 2000);
+
+    // Cycle factoids with crossfade
+    overlay._factoidInterval = setInterval(() => {
+        const card = overlay.querySelector('.factoid-card');
+        if (!card) return;
+        card.classList.add('factoid-exit');
+        setTimeout(() => {
+            const next = getRandomFactoid();
+            card.querySelector('.factoid-emoji').textContent = next.emoji;
+            card.querySelector('.factoid-text').textContent = next.text;
+            card.classList.remove('factoid-exit');
+            card.classList.add('factoid-enter');
+            setTimeout(() => card.classList.remove('factoid-enter'), 500);
+        }, 400);
+    }, 4000);
 }
 
 function hidePuzzleLoading() {
     const overlay = document.getElementById('puzzle-loading');
     if (overlay) {
         clearInterval(overlay._msgInterval);
+        clearInterval(overlay._factoidInterval);
         overlay.classList.add('hidden');
     }
+}
+
+// ---------------------------------------------------------------------------
+// Full-page factoid interstitial (shown between puzzles)
+// ---------------------------------------------------------------------------
+let _factoidPageData = null;  // stash next-puzzle data to apply after factoid
+
+function showFactoidPage(nextPuzzleData, duration) {
+    _factoidPageData = nextPuzzleData;
+    const ms = duration || 2800;
+
+    // Remove any existing factoid page
+    document.querySelectorAll('.factoid-page').forEach(el => el.remove());
+
+    const factoid = getRandomFactoid();
+    const theme = getCurrentTheme();
+    const themeData = THEME_DATA[theme] || {};
+    const nextNum = nextPuzzleData
+        ? (nextPuzzleData.puzzle_number || (currentPuzzleNumber + 1))
+        : currentPuzzleNumber + 1;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'factoid-page';
+    overlay.innerHTML = `
+        <div class="factoid-page-inner">
+            <div class="factoid-page-progress">
+                <span class="factoid-page-badge">Puzzle ${nextNum} of ${TOTAL_PUZZLES}</span>
+            </div>
+            <div class="factoid-page-emoji">${factoid.emoji}</div>
+            <p class="factoid-page-label">Did you know?</p>
+            <p class="factoid-page-text">${factoid.text}</p>
+            <div class="factoid-page-loader">
+                <div class="factoid-page-loader-bar" style="animation-duration: ${ms}ms;"></div>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    // After duration, transition to next puzzle
+    setTimeout(() => {
+        overlay.classList.add('factoid-page-exit');
+        setTimeout(() => {
+            overlay.remove();
+            if (_factoidPageData) {
+                transitionToPuzzle(_factoidPageData);
+                _factoidPageData = null;
+            }
+        }, 500);
+    }, ms);
+}
+
+function hideFactoidPage() {
+    document.querySelectorAll('.factoid-page').forEach(el => {
+        el.classList.add('factoid-page-exit');
+        setTimeout(() => el.remove(), 500);
+    });
+    _factoidPageData = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -325,7 +516,7 @@ async function retryNextPuzzle(attempts) {
     const maxAttempts = attempts || 3;
     for (let i = 0; i < maxAttempts; i++) {
         try {
-            const resp = await fetch('/next-puzzle', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const resp = await fetch('/next-puzzle', { method: 'POST', headers: csrfHeaders() });
             const data = await resp.json();
             if (data.time_up) { window.location.href = data.redirect; return; }
             if (data.success && data.puzzle) {
@@ -370,6 +561,14 @@ async function manualRetry() {
 // ---------------------------------------------------------------------------
 async function submitAnswer() {
     if (isSubmitting) return;
+
+    // Fix #2: Block submission if answer was revealed
+    if (answerRevealed) {
+        showFeedback(false, 'You already revealed the answer. Use Skip to move on.');
+        shakeElement(document.getElementById('puzzle-card'));
+        return;
+    }
+
     const input = document.getElementById('answer-input');
     const answer = input.value.trim();
     if (!answer) { shakeElement(input); return; }
@@ -382,7 +581,7 @@ async function submitAnswer() {
     try {
         const resp = await fetch('/answer', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: csrfHeaders(),
             body: JSON.stringify({ answer }),
         });
         const data = await resp.json();
@@ -420,7 +619,8 @@ async function submitAnswer() {
                     retryNextPuzzle(4);
                 }, 1500);
             } else if (data.puzzle) {
-                setTimeout(() => transitionToPuzzle(data), 1800);
+                // Full-page factoid interstitial before next puzzle
+                setTimeout(() => showFactoidPage(data, 2800), 800);
             }
         } else {
             showFeedback(false, data.feedback || 'Not quite. Try again!');
@@ -457,7 +657,7 @@ async function requestHint() {
     const btn = document.getElementById('hint-btn');
     btn.disabled = true;
     try {
-        const resp = await fetch('/hint', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const resp = await fetch('/hint', { method: 'POST', headers: csrfHeaders() });
         const data = await resp.json();
         if (data.time_up) { window.location.href = data.redirect; return; }
         document.getElementById('hint-text').textContent = data.hint;
@@ -489,11 +689,18 @@ async function revealAnswer() {
 
     btn.disabled = true;
     try {
-        const resp = await fetch('/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const resp = await fetch('/reveal', { method: 'POST', headers: csrfHeaders() });
         const data = await resp.json();
         if (data.time_up) { window.location.href = data.redirect; return; }
         document.getElementById('reveal-answer-text').textContent = data.answer;
         panel.classList.remove('hidden');
+
+        // Fix #2: Mark answer as revealed — disable submit
+        answerRevealed = true;
+        const submitBtn = document.getElementById('submit-btn');
+        const answerInput = document.getElementById('answer-input');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.4'; }
+        if (answerInput) { answerInput.disabled = true; answerInput.placeholder = 'Answer revealed — use Skip to continue'; }
     } catch (err) { console.error('Reveal error:', err); }
     finally { btn.disabled = false; }
 }
@@ -505,7 +712,7 @@ async function skipPuzzle() {
     const btn = document.getElementById('skip-btn');
     btn.disabled = true;
     try {
-        const resp = await fetch('/skip', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const resp = await fetch('/skip', { method: 'POST', headers: csrfHeaders() });
         const data = await resp.json();
         if (data.time_up) { window.location.href = data.redirect; return; }
         if (data.redirect) {
@@ -523,8 +730,12 @@ async function skipPuzzle() {
             document.getElementById('feedback').classList.add('hidden');
             setTimeout(() => {
                 skipPanel.classList.add('hidden');
-                if (data.puzzle) transitionToPuzzle(data);
-            }, 2000);
+                if (data.puzzle) {
+                    showFactoidPage(data, 2500);
+                } else {
+                    transitionToPuzzle(data);
+                }
+            }, 1500);
         }
     } catch (err) { console.error('Skip error:', err); }
     finally { btn.disabled = false; }
@@ -537,6 +748,16 @@ function transitionToPuzzle(data) {
     const card = document.getElementById('puzzle-card');
     card.style.opacity = '0';
     card.style.transform = 'translateY(20px) scale(0.98)';
+
+    // Clean up any lingering factoid
+    hideInlineFactoid();
+
+    // Fix #2: Reset revealed state for the new puzzle
+    answerRevealed = false;
+    const submitBtn = document.getElementById('submit-btn');
+    const answerInput = document.getElementById('answer-input');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+    if (answerInput) { answerInput.disabled = false; answerInput.placeholder = 'Type your answer...'; }
 
     setTimeout(() => {
         currentPuzzleNumber = data.puzzle_number || (currentPuzzleNumber + 1);
@@ -621,7 +842,7 @@ function initParticles() {
 function startTimeCheck() {
     setInterval(async () => {
         try {
-            const resp = await fetch('/time-check', { method: 'POST' });
+            const resp = await fetch('/time-check', { method: 'POST', headers: csrfHeaders() });
             const data = await resp.json();
             if (data.time_up) window.location.href = data.redirect;
             else if (data.remaining_seconds !== undefined) {

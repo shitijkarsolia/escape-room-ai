@@ -2,6 +2,9 @@
 
 Generates all puzzles ahead of time in background threads so the player
 never waits for AI after the first puzzle.
+
+Fix #5: Cache entries have a TTL (30 min) and the total cache is capped
+at MAX_SESSIONS to prevent unbounded memory growth.
 """
 
 import threading
@@ -14,8 +17,12 @@ from game_engine import GameEngine, GameState, PuzzleState, TOTAL_PUZZLES
 
 logger = logging.getLogger(__name__)
 
-# In-memory cache: session_id -> { puzzle_index: PuzzleState dict }
-_cache: dict[str, dict[int, dict]] = {}
+# --- Fix #5: TTL and size limits ---
+CACHE_TTL_SECONDS = 30 * 60   # 30 minutes
+MAX_SESSIONS = 200             # max concurrent cached sessions
+
+# In-memory cache: session_id -> { "puzzles": {idx: dict}, "created_at": float }
+_cache: dict[str, dict] = {}
 _cache_lock = threading.Lock()
 
 # Track which sessions have background generation running
@@ -50,7 +57,7 @@ def _generate_puzzles_background(session_id: str, state: GameState):
             if puzzle:
                 with _cache_lock:
                     if session_id in _cache:
-                        _cache[session_id][puzzle_idx] = {
+                        _cache[session_id]["puzzles"][puzzle_idx] = {
                             "puzzle": puzzle.to_dict(),
                             "narrative_text": puzzle.narrative_text,
                         }
@@ -72,13 +79,35 @@ def _generate_puzzles_background(session_id: str, state: GameState):
     logger.info("🏁 [Cache] Background generation complete for session %s", session_id)
 
 
+def _evict_expired() -> None:
+    """Remove expired sessions and enforce MAX_SESSIONS cap.  Caller must hold _cache_lock."""
+    now = time.time()
+    expired = [sid for sid, entry in _cache.items()
+               if now - entry.get("created_at", 0) > CACHE_TTL_SECONDS]
+    for sid in expired:
+        del _cache[sid]
+        _generating.pop(sid, None)
+    if expired:
+        logger.info("🧹 [Cache] Evicted %d expired session(s)", len(expired))
+
+    # LRU-style cap: remove oldest sessions if over limit
+    if len(_cache) > MAX_SESSIONS:
+        sorted_sids = sorted(_cache, key=lambda s: _cache[s].get("created_at", 0))
+        to_remove = sorted_sids[:len(_cache) - MAX_SESSIONS]
+        for sid in to_remove:
+            del _cache[sid]
+            _generating.pop(sid, None)
+        logger.info("🧹 [Cache] Evicted %d session(s) over cap", len(to_remove))
+
+
 def start_precaching(session_id: str, state: GameState):
     """Start background puzzle generation for a new game session.
 
     Call this right after the first puzzle is generated and the game starts.
     """
     with _cache_lock:
-        _cache[session_id] = {}
+        _evict_expired()
+        _cache[session_id] = {"puzzles": {}, "created_at": time.time()}
         _generating[session_id] = True
 
     thread = threading.Thread(
@@ -92,8 +121,15 @@ def start_precaching(session_id: str, state: GameState):
 def get_cached_puzzle(session_id: str, puzzle_index: int) -> Optional[dict]:
     """Get a pre-generated puzzle from cache, or None if not ready yet."""
     with _cache_lock:
-        session_cache = _cache.get(session_id, {})
-        return session_cache.get(puzzle_index)
+        entry = _cache.get(session_id)
+        if not entry:
+            return None
+        # Check TTL
+        if time.time() - entry.get("created_at", 0) > CACHE_TTL_SECONDS:
+            _cache.pop(session_id, None)
+            _generating.pop(session_id, None)
+            return None
+        return entry["puzzles"].get(puzzle_index)
 
 
 def invalidate_session(session_id: str):
@@ -106,9 +142,13 @@ def invalidate_session(session_id: str):
 def get_cache_status(session_id: str) -> dict:
     """Get cache status for debugging."""
     with _cache_lock:
-        session_cache = _cache.get(session_id, {})
+        entry = _cache.get(session_id)
+        if not entry:
+            return {"cached_puzzles": [], "count": 0, "generating": False}
+        puzzles = entry.get("puzzles", {})
         return {
-            "cached_puzzles": list(session_cache.keys()),
-            "count": len(session_cache),
+            "cached_puzzles": list(puzzles.keys()),
+            "count": len(puzzles),
             "generating": _generating.get(session_id, False),
+            "age_seconds": round(time.time() - entry.get("created_at", 0), 1),
         }

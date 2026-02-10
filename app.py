@@ -3,6 +3,7 @@
 import os
 import io
 import json
+import re
 import secrets
 
 from typing import Optional
@@ -16,6 +17,9 @@ from flask import (
     session,
     url_for,
 )
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from PIL import Image
 from dotenv import load_dotenv
 
@@ -28,7 +32,42 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 
+# --- Fix #6: Limit upload size to 10 MB ---
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
+
+# --- Fix #3: CSRF protection on all POST endpoints ---
+csrf = CSRFProtect(app)
+
+# --- Fix #4: Rate limiting ---
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["120 per minute"],
+    storage_uri="memory://",
+)
+
 engine = GameEngine()
+
+
+# ---------------------------------------------------------------------------
+# Helper: sanitize player input (Fix #7)
+# ---------------------------------------------------------------------------
+def _sanitize_input(text: str, max_length: int = 200) -> str:
+    """Sanitize player-supplied text before it enters AI prompts.
+
+    - Truncates to *max_length* characters.
+    - Strips leading/trailing whitespace.
+    - Removes characters that could be used for prompt-injection framing
+      (e.g. triple-backticks, system/user/assistant role markers).
+    """
+    text = text.strip()[:max_length]
+    # Remove markdown code fences that could wrap fake JSON / system prompts
+    text = text.replace("```", "")
+    # Remove common role-injection markers
+    text = re.sub(r"(?i)\b(system|assistant|user)\s*:", "", text)
+    # Collapse excessive whitespace
+    text = re.sub(r"\s{3,}", "  ", text)
+    return text
 
 
 def _session_id() -> str:
@@ -145,6 +184,7 @@ def result():
 # Routes: API (JSON endpoints for fetch calls)
 # ---------------------------------------------------------------------------
 @app.route("/start", methods=["POST"])
+@limiter.limit("10 per minute")
 def start_game():
     """Start a new game with the selected theme."""
     data = request.get_json()
@@ -173,11 +213,16 @@ def start_game():
 
 
 @app.route("/answer", methods=["POST"])
+@limiter.limit("30 per minute")
 def submit_answer():
     """Submit an answer for the current puzzle."""
     state = get_game_state()
     if not state or state.status != "playing":
         return jsonify({"error": "No active game"}), 400
+
+    # --- Fix #2: Block submission if answer was revealed ---
+    if session.get("revealed_puzzle") == state.current_puzzle_index:
+        return jsonify({"error": "You already revealed the answer for this puzzle. Use Skip to move on."}), 400
 
     # Check time
     if state.is_time_up:
@@ -186,7 +231,8 @@ def submit_answer():
         return jsonify({"time_up": True, "redirect": url_for("result")})
 
     data = request.get_json()
-    player_answer = data.get("answer", "").strip()
+    # --- Fix #7: Sanitize player input ---
+    player_answer = _sanitize_input(data.get("answer", ""))
 
     if not player_answer:
         return jsonify({"error": "Please enter an answer"}), 400
@@ -212,11 +258,9 @@ def submit_answer():
 
         if cached:
             app.logger.info("⚡ [Answer] Using cached puzzle %d", next_idx + 1)
-            puzzle = PuzzleState(**cached["puzzle"])
-            state.current_puzzle = puzzle
-            state.puzzles.append(puzzle.to_dict())
-            if puzzle.narrative_text:
-                state.narrative_log.append(puzzle.narrative_text)
+            state.puzzles.append(cached["puzzle"])
+            if cached.get("narrative_text"):
+                state.narrative_log.append(cached["narrative_text"])
         else:
             app.logger.info("🐢 [Answer] Cache miss for puzzle %d, generating on-demand", next_idx + 1)
             try:
@@ -246,6 +290,7 @@ def submit_answer():
 
 
 @app.route("/hint", methods=["POST"])
+@limiter.limit("20 per minute")
 def get_hint():
     """Request a hint for the current puzzle."""
     state = get_game_state()
@@ -267,6 +312,7 @@ def get_hint():
 
 
 @app.route("/start-custom", methods=["POST"])
+@limiter.limit("5 per minute")
 def start_custom_game():
     """Start a custom game from an uploaded image."""
     if "image" not in request.files:
@@ -307,6 +353,9 @@ def reveal_answer():
     if not puzzle:
         return jsonify({"error": "No active puzzle"}), 400
 
+    # --- Fix #2: Mark this puzzle as revealed so /answer rejects submissions ---
+    session["revealed_puzzle"] = state.current_puzzle_index
+
     return jsonify({"answer": puzzle.answer})
 
 
@@ -336,11 +385,9 @@ def skip_puzzle():
 
         if cached:
             app.logger.info("⚡ [Skip] Using cached puzzle %d", next_idx + 1)
-            puzzle = PuzzleState(**cached["puzzle"])
-            state.current_puzzle = puzzle
-            state.puzzles.append(puzzle.to_dict())
-            if puzzle.narrative_text:
-                state.narrative_log.append(puzzle.narrative_text)
+            state.puzzles.append(cached["puzzle"])
+            if cached.get("narrative_text"):
+                state.narrative_log.append(cached["narrative_text"])
         else:
             app.logger.info("🐢 [Skip] Cache miss for puzzle %d, generating on-demand", next_idx + 1)
             try:
@@ -381,7 +428,6 @@ def next_puzzle():
     cached = puzzle_cache.get_cached_puzzle(sid, state.current_puzzle_index)
     if cached:
         app.logger.info("⚡ [Cache HIT] Using cached puzzle %d", state.current_puzzle_index + 1)
-        state.current_puzzle = PuzzleState(**cached["puzzle"])
         state.puzzles.append(cached["puzzle"])
         if cached.get("narrative_text"):
             state.narrative_log.append(cached["narrative_text"])
@@ -407,6 +453,8 @@ def next_puzzle():
 @app.route("/cache-status", methods=["GET"])
 def cache_status():
     """Debug endpoint: check puzzle cache status for current session."""
+    if not app.debug:
+        return jsonify({"error": "Not available"}), 404
     sid = session.get("_cache_id")
     if not sid:
         return jsonify({"error": "No session"}), 400

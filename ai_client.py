@@ -18,19 +18,18 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Model cascade — try each in order until one works
-# opus models are high quality (~7.5s) without haiku's hallucination issues
+# User preference: **do not use opus**, favor sonnet.
 MODEL_CASCADE = [
-    "claude-opus-4.5",       # ~7.5s avg — best quality, reliable for puzzles
-    "claude-opus-4.6",       # ~7.7s avg — newest model fallback
-    "claude-haiku-4.5",      # ~6s avg — fast but can hallucinate, last resort
-    "claude-sonnet-4.5",     # ~20s avg — slow due to server-side reasoning
+    "claude-sonnet-4.5",  # primary model for generation
+    "claude-haiku-4.5",   # fallback if sonnet is unavailable
 ]
 
 # Fast model for simple tasks (answer validation)
-FAST_MODEL = "claude-haiku-4.5"  # simple yes/no — haiku is fine here
+# Also uses sonnet as requested (no opus).
+FAST_MODEL = "claude-sonnet-4.5"
 
 # Vision-capable model
-VISION_MODEL = "claude-opus-4.5"
+VISION_MODEL = "claude-sonnet-4.5"
 
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 2  # seconds
