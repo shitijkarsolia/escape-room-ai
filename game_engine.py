@@ -1,7 +1,9 @@
 """Game engine: state machine, puzzle lifecycle, scoring, and session management."""
 
+import re
 import time
 import random
+from difflib import SequenceMatcher
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
 
@@ -159,6 +161,40 @@ class GameEngine:
 
         return state
 
+    @staticmethod
+    def _normalize(text: str) -> str:
+        """Normalize text for comparison: lowercase, strip, remove articles and punctuation."""
+        t = text.lower().strip()
+        t = re.sub(r"[^a-z0-9\s]", "", t)          # remove punctuation
+        t = re.sub(r"\b(the|a|an)\b", "", t)        # remove articles
+        return re.sub(r"\s+", " ", t).strip()
+
+    @staticmethod
+    def _local_match(expected: str, player: str) -> Optional[bool]:
+        """Try to match locally. Returns True/False if confident, None if unsure."""
+        norm_exp = GameEngine._normalize(expected)
+        norm_player = GameEngine._normalize(player)
+
+        # Exact match after normalization
+        if norm_exp == norm_player:
+            return True
+
+        # One is contained in the other
+        if norm_exp in norm_player or norm_player in norm_exp:
+            # Only if lengths are similar (avoid "a" matching "abracadabra")
+            if len(norm_player) >= len(norm_exp) * 0.5:
+                return True
+
+        # Fuzzy similarity
+        ratio = SequenceMatcher(None, norm_exp, norm_player).ratio()
+        if ratio >= 0.85:
+            return True
+        if ratio <= 0.35:
+            return False
+
+        # Ambiguous — let Gemini decide
+        return None
+
     def check_answer(self, state: GameState, player_answer: str) -> tuple[GameState, dict]:
         """Validate a player's answer. Returns (updated_state, result_dict)."""
         puzzle = state.current_puzzle
@@ -171,16 +207,35 @@ class GameEngine:
 
         puzzle.attempts += 1
 
-        # Use Gemini for flexible validation
-        prompt = answer_validation_prompt(
-            question=puzzle.question,
-            expected_answer=puzzle.answer,
-            player_answer=player_answer,
-        )
-        validation = validate_answer(ANSWER_VALIDATION_SYSTEM, prompt)
+        # ---------- Fast local matching first ----------
+        local_result = self._local_match(puzzle.answer, player_answer)
 
-        is_correct = validation.get("correct", False)
-        feedback = validation.get("feedback", "")
+        if local_result is True:
+            is_correct = True
+            feedback = "Correct! Well done!"
+        elif local_result is False:
+            is_correct = False
+            feedback = "Not quite. Try again!"
+        else:
+            # Ambiguous — use Gemini for flexible validation
+            try:
+                prompt = answer_validation_prompt(
+                    question=puzzle.question,
+                    expected_answer=puzzle.answer,
+                    player_answer=player_answer,
+                )
+                validation = validate_answer(ANSWER_VALIDATION_SYSTEM, prompt)
+                is_correct = validation.get("correct", False)
+                feedback = validation.get("feedback", "")
+            except Exception:
+                # If Gemini fails, fall back to stricter local match
+                ratio = SequenceMatcher(
+                    None,
+                    self._normalize(puzzle.answer),
+                    self._normalize(player_answer),
+                ).ratio()
+                is_correct = ratio >= 0.6
+                feedback = "Correct!" if is_correct else "Not quite. Try again!"
 
         if is_correct:
             puzzle.solved = True

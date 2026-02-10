@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 PRIMARY_MODEL = "gemini-3-flash-preview"
 FALLBACK_MODEL = "gemini-2.5-flash"
 
-MAX_RETRIES = 3
-RETRY_BASE_DELAY = 2  # seconds
+MAX_RETRIES = 2
+RETRY_BASE_DELAY = 1  # seconds
 
 
 def _get_client() -> genai.Client:
@@ -129,7 +129,7 @@ def analyze_image(system_prompt: str, user_prompt: str, image: Image.Image, temp
 def validate_answer(system_prompt: str, user_prompt: str) -> dict:
     """Validate a player's answer using Gemini.
 
-    Uses lower temperature for more deterministic validation.
+    Uses the fallback (faster) model with low temperature for quick validation.
 
     Args:
         system_prompt: System instruction for validation.
@@ -138,4 +138,12 @@ def validate_answer(system_prompt: str, user_prompt: str) -> dict:
     Returns:
         Parsed JSON dict with 'correct' (bool) and 'feedback' (str).
     """
-    return generate_json(system_prompt, user_prompt, temperature=0.3)
+    client = _get_client()
+    config = {
+        "system_instruction": system_prompt,
+        "response_mime_type": "application/json",
+        "temperature": 0.2,
+    }
+    # Use fallback model first for speed — validation is simple
+    response = _call_with_retry(client, FALLBACK_MODEL, user_prompt, config)
+    return json.loads(response.text)
