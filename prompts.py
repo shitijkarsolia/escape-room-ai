@@ -111,6 +111,24 @@ THEME_DESCRIPTIONS = {
         "gradient_from": "#365314",
         "gradient_to": "#84cc16",
     },
+    "supernatural": {
+        "name": "Supernatural",
+        "tagline": "Saving people, solving puzzles. The family business.",
+        "category": "tvshow",
+        "setting": (
+            "You are trapped in the Men of Letters bunker after a warding spell sealed all exits. "
+            "Sam and Dean left behind a trail of clues hidden in John Winchester's journal, "
+            "Bobby Singer's old books, and Castiel's cryptic angel radio transmissions. "
+            "Puzzles involve decoding Enochian sigils, translating Latin exorcism phrases, "
+            "matching lore entries to the correct monster weaknesses, cracking Crowley's crossroads contracts, "
+            "and piecing together a demon trap blueprint. Every puzzle draws from hunts, "
+            "angel-demon mythology, and the brothers' legendary road trip adventures."
+        ),
+        "icon": "🔥",
+        "accent": "orange",
+        "gradient_from": "#7c2d12",
+        "gradient_to": "#f97316",
+    },
     # ---- Custom (image-based) ----
     "custom": {
         "name": "Your Image",

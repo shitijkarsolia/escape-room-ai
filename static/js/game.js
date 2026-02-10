@@ -115,6 +115,24 @@ const THEME_DATA = {
         victoryTitle: 'Say My Name — You Escaped!',
         victoryEmoji: '🧬',
     },
+    supernatural: {
+        wrongReactions: [
+            { char: 'Dean', msg: "Son of a bitch... that's wrong." },
+            { char: 'Sam', msg: "I've read every lore book in the bunker. That's not it." },
+            { char: 'Castiel', msg: "I am an angel of the Lord. And even I know that's incorrect." },
+            { char: 'Crowley', msg: "Hello, boys. That answer is rubbish. Try again, moose." },
+            { char: 'Bobby', msg: "Idjit! That ain't even close." },
+            { char: 'Dean', msg: "Dude. No. That's worse than Sam's salads." },
+        ],
+        correctReactions: [
+            { char: 'Dean', msg: "Hell yeah! Now that's what I'm talking about. Pie for everyone." },
+            { char: 'Sam', msg: "Nice work. Dad would be proud." },
+            { char: 'Castiel', msg: "You have done well. I have faith in you." },
+        ],
+        celebrationEmojis: ['🔥', '👼', '😈', '🚗', '⭐', '🗡️'],
+        victoryTitle: 'Carry On — You Escaped!',
+        victoryEmoji: '🔥',
+    },
     custom: {
         wrongReactions: [
             { char: 'AI', msg: "Not quite! Look more carefully at the image." },

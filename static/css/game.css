@@ -188,6 +188,23 @@ button, a, input { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 }
 .room-breakingbad .particle { background: rgba(132, 204, 22, 0.1); }
 
+/* ----- Supernatural: Hunter's journal ----- */
+.room-supernatural #puzzle-card {
+    background: linear-gradient(180deg, rgba(249, 115, 22, 0.04) 0%, rgba(0,0,0,0) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.12);
+    position: relative;
+}
+.room-supernatural #puzzle-card::before {
+    content: '🔥 JOHN WINCHESTER\'S JOURNAL';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(249, 115, 22, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-supernatural #puzzle-question {
+    font-family: 'Georgia', 'Times New Roman', serif;
+}
+.room-supernatural .particle { background: rgba(249, 115, 22, 0.1); }
+
 /* ---------------------------------------------------------------------------
    Celebration Overlays
    --------------------------------------------------------------------------- */
