@@ -7,7 +7,7 @@ from difflib import SequenceMatcher
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
 
-from groq_client import generate_json, validate_answer, analyze_image
+from ai_client import generate_json, validate_answer, analyze_image
 from prompts import (
     PUZZLE_GENERATION_SYSTEM,
     ANSWER_VALIDATION_SYSTEM,
@@ -119,7 +119,7 @@ class GameEngine:
         return state
 
     def generate_puzzle(self, state: GameState) -> GameState:
-        """Generate the next puzzle using Groq."""
+        """Generate the next puzzle using AI."""
         previous_puzzles = []
         for p_dict in state.puzzles:
             p = PuzzleState.from_dict(p_dict)
@@ -217,7 +217,7 @@ class GameEngine:
             is_correct = False
             feedback = "Not quite. Try again!"
         else:
-            # Ambiguous — use Groq for flexible validation
+            # Ambiguous — use AI for flexible validation
             try:
                 prompt = answer_validation_prompt(
                     question=puzzle.question,
@@ -228,7 +228,7 @@ class GameEngine:
                 is_correct = validation.get("correct", False)
                 feedback = validation.get("feedback", "")
             except Exception:
-                # If Groq fails, fall back to stricter local match
+                # If AI fails, fall back to stricter local match
                 ratio = SequenceMatcher(
                     None,
                     self._normalize(puzzle.answer),
@@ -291,7 +291,7 @@ class GameEngine:
         if not puzzle:
             return state, {"hint": "No active puzzle.", "encouragement": ""}
 
-        # Use pre-generated hints first, then ask Groq for custom ones
+        # Use pre-generated hints first, then ask AI for custom ones
         if puzzle.hints_used < len(puzzle.hints):
             hint_text = puzzle.hints[puzzle.hints_used]
             encouragement = "You've got this! Keep thinking..."

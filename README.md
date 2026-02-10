@@ -1,19 +1,26 @@
 # AI Escape Room
 
-An immersive, AI-powered escape room game built with **Groq**. Every puzzle is uniquely generated at lightning speed using Groq's LPU Inference Engine. Solve riddles, logic puzzles, visual challenges, and ciphers to escape before time runs out.
+An immersive, AI-powered escape room game. Every puzzle is uniquely generated using advanced AI reasoning. Solve riddles, logic puzzles, visual challenges, and more to escape before time runs out.
+
+## Screenshots
+
+| Lobby | Game Room | Results |
+|:-----:|:---------:|:-------:|
+| ![Lobby](static/screenshot-lobby.png) | ![Game Room](static/screenshot-game.png) | ![Results](static/screenshot-result.png) |
+| *Choose from themed rooms or upload your own image* | *Solve AI-generated puzzles against the clock* | *See your final score and puzzle breakdown* |
 
 ## Features
 
 - **3 Themed Rooms**: Ancient Temple, Space Station, Haunted Mansion — each with unique atmosphere and narrative
-- **Dynamic Puzzle Generation**: Every puzzle is created on-the-fly by Groq — no two playthroughs are the same
-- **Multimodal Puzzles**: Upload images and Groq creates visual puzzles from them
+- **Dynamic Puzzle Generation**: Every puzzle is created on-the-fly by AI — no two playthroughs are the same
+- **Multimodal Puzzles**: Upload images and AI creates visual puzzles from them
 - **Adaptive Difficulty**: The AI calibrates puzzle difficulty based on your performance
 - **Hint System**: Request hints when stuck (costs 60 seconds from your timer)
 - **15-Minute Timer**: Race against the clock to solve all 5 puzzles
 
-## Groq Integration
+## AI Integration
 
-This app deeply integrates Groq's ultra-fast LPU inference in four key ways:
+This app deeply integrates AI in four key ways:
 
 1. **Puzzle Generation** — Generates logically consistent, thematically appropriate puzzles with structured JSON output at ~1000 tokens/sec
 2. **Answer Validation** — Flexible semantic matching (not just string comparison) so players aren't penalized for minor typos or rephrasing
@@ -24,7 +31,7 @@ This app deeply integrates Groq's ultra-fast LPU inference in four key ways:
 
 - **Backend**: Python, Flask
 - **Frontend**: Jinja2, Tailwind CSS, Vanilla JavaScript
-- **AI**: Groq API (groq Python SDK)
+- **AI**: OpenAI-compatible API (openai Python SDK)
 - **Deployment**: AWS EC2 + Gunicorn
 
 ## Setup
@@ -38,7 +45,7 @@ cd escape-room-ai
 uv sync
 
 # Set environment variables
-export GROQ_API_KEY=your-api-key-here
+export API_KEY=your-api-key-here
 export FLASK_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 
 # Run the app
