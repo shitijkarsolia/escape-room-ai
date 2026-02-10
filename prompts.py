@@ -23,6 +23,7 @@ THEME_DESCRIPTIONS = {
         "accent": "blue",
         "gradient_from": "#1e3a5f",
         "gradient_to": "#3b82f6",
+        "image": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80",
     },
     "friends": {
         "name": "Friends",
@@ -40,6 +41,7 @@ THEME_DESCRIPTIONS = {
         "accent": "yellow",
         "gradient_from": "#713f12",
         "gradient_to": "#eab308",
+        "image": "https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=600&q=80",
     },
     "got": {
         "name": "Game of Thrones",
@@ -58,6 +60,7 @@ THEME_DESCRIPTIONS = {
         "accent": "red",
         "gradient_from": "#7f1d1d",
         "gradient_to": "#dc2626",
+        "image": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80",
     },
     "parksandrec": {
         "name": "Parks & Rec",
@@ -75,6 +78,7 @@ THEME_DESCRIPTIONS = {
         "accent": "green",
         "gradient_from": "#14532d",
         "gradient_to": "#22c55e",
+        "image": "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80",
     },
     "bigbang": {
         "name": "Big Bang Theory",
@@ -92,6 +96,7 @@ THEME_DESCRIPTIONS = {
         "accent": "teal",
         "gradient_from": "#134e4a",
         "gradient_to": "#14b8a6",
+        "image": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&q=80",
     },
     "breakingbad": {
         "name": "Breaking Bad",
@@ -110,6 +115,7 @@ THEME_DESCRIPTIONS = {
         "accent": "lime",
         "gradient_from": "#365314",
         "gradient_to": "#84cc16",
+        "image": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&q=80",
     },
     "supernatural": {
         "name": "Supernatural",
@@ -128,6 +134,7 @@ THEME_DESCRIPTIONS = {
         "accent": "orange",
         "gradient_from": "#7c2d12",
         "gradient_to": "#f97316",
+        "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80",
     },
     # ---- Custom (image-based) ----
     "custom": {
@@ -143,6 +150,7 @@ THEME_DESCRIPTIONS = {
         "accent": "indigo",
         "gradient_from": "#312e81",
         "gradient_to": "#6366f1",
+        "image": "",
     },
 }
 

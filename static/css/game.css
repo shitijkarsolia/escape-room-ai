@@ -32,10 +32,32 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Theme card hover
+   Theme card hover (lobby)
    --------------------------------------------------------------------------- */
-.theme-card { cursor: pointer; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-.theme-card:hover { transform: translateY(-2px); }
+.theme-card {
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.theme-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   Room content above atmospheric bg
+   --------------------------------------------------------------------------- */
+.room-theoffice > header,
+.room-friends > header,
+.room-got > header,
+.room-parksandrec > header,
+.room-bigbang > header,
+.room-breakingbad > header,
+.room-supernatural > header,
+.room-custom > header,
+[class*="room-"] > .flex-1 {
+    position: relative;
+    z-index: 1;
+}
 
 /* ---------------------------------------------------------------------------
    Input focus glow
