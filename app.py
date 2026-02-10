@@ -113,9 +113,13 @@ def start_game():
     if theme not in THEME_DESCRIPTIONS:
         return jsonify({"error": "Invalid theme"}), 400
 
-    state = engine.start_game(theme)
-    state = engine.generate_puzzle(state)
-    save_game_state(state)
+    try:
+        state = engine.start_game(theme)
+        state = engine.generate_puzzle(state)
+        save_game_state(state)
+    except Exception as e:
+        app.logger.error("Failed to start game: %s", e)
+        return jsonify({"error": f"AI is busy — please try again in a moment. ({type(e).__name__})"}), 503
 
     return jsonify({
         "success": True,
@@ -142,7 +146,11 @@ def submit_answer():
     if not player_answer:
         return jsonify({"error": "Please enter an answer"}), 400
 
-    state, result = engine.check_answer(state, player_answer)
+    try:
+        state, result = engine.check_answer(state, player_answer)
+    except Exception as e:
+        app.logger.error("Answer validation failed: %s", e)
+        return jsonify({"correct": False, "feedback": "AI is momentarily busy. Try submitting again."})
 
     if result.get("game_complete"):
         save_game_state(state)
@@ -153,7 +161,12 @@ def submit_answer():
 
     if result.get("next_puzzle"):
         # Generate next puzzle
-        state = engine.generate_puzzle(state)
+        try:
+            state = engine.generate_puzzle(state)
+        except Exception as e:
+            app.logger.error("Puzzle generation failed: %s", e)
+            return jsonify({**result, "error_generating": True,
+                            "feedback": "Correct! But the AI needs a moment to generate the next puzzle. Refresh the page."})
         save_game_state(state)
         puzzle = state.current_puzzle
         return jsonify({

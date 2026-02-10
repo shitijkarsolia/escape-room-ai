@@ -2,10 +2,21 @@
 
 import json
 import os
-from typing import Optional
+import time
+import logging
 
 from google import genai
+from google.genai import errors as genai_errors
 from PIL import Image
+
+logger = logging.getLogger(__name__)
+
+# Primary model, with fallback
+PRIMARY_MODEL = "gemini-3-flash-preview"
+FALLBACK_MODEL = "gemini-2.5-flash"
+
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 2  # seconds
 
 
 def _get_client() -> genai.Client:
@@ -16,7 +27,40 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-MODEL = "gemini-2.5-flash-preview-05-20"
+def _call_with_retry(client, model, contents, config):
+    """Call generate_content with retry logic and model fallback."""
+    models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
+
+    for model_name in models_to_try:
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config,
+                )
+                return response
+            except genai_errors.ServerError as e:
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "Model %s attempt %d failed (503): %s. Retrying in %ds...",
+                    model_name, attempt + 1, str(e)[:100], delay
+                )
+                time.sleep(delay)
+            except genai_errors.ClientError as e:
+                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    delay = RETRY_BASE_DELAY * (2 ** attempt)
+                    logger.warning(
+                        "Rate limited on %s attempt %d. Retrying in %ds...",
+                        model_name, attempt + 1, delay
+                    )
+                    time.sleep(delay)
+                else:
+                    raise
+
+        logger.warning("All retries exhausted for model %s, trying fallback...", model_name)
+
+    raise RuntimeError("All models and retries exhausted. Please try again later.")
 
 
 def generate_json(system_prompt: str, user_prompt: str, temperature: float = 0.9) -> dict:
@@ -31,15 +75,12 @@ def generate_json(system_prompt: str, user_prompt: str, temperature: float = 0.9
         Parsed JSON dict from the model response.
     """
     client = _get_client()
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=user_prompt,
-        config={
-            "system_instruction": system_prompt,
-            "response_mime_type": "application/json",
-            "temperature": temperature,
-        },
-    )
+    config = {
+        "system_instruction": system_prompt,
+        "response_mime_type": "application/json",
+        "temperature": temperature,
+    }
+    response = _call_with_retry(client, PRIMARY_MODEL, user_prompt, config)
     return json.loads(response.text)
 
 
@@ -55,14 +96,11 @@ def generate_text(system_prompt: str, user_prompt: str, temperature: float = 0.9
         Text string from the model response.
     """
     client = _get_client()
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=user_prompt,
-        config={
-            "system_instruction": system_prompt,
-            "temperature": temperature,
-        },
-    )
+    config = {
+        "system_instruction": system_prompt,
+        "temperature": temperature,
+    }
+    response = _call_with_retry(client, PRIMARY_MODEL, user_prompt, config)
     return response.text
 
 
@@ -79,15 +117,12 @@ def analyze_image(system_prompt: str, user_prompt: str, image: Image.Image, temp
         Parsed JSON dict from the model response.
     """
     client = _get_client()
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=[user_prompt, image],
-        config={
-            "system_instruction": system_prompt,
-            "response_mime_type": "application/json",
-            "temperature": temperature,
-        },
-    )
+    config = {
+        "system_instruction": system_prompt,
+        "response_mime_type": "application/json",
+        "temperature": temperature,
+    }
+    response = _call_with_retry(client, PRIMARY_MODEL, [user_prompt, image], config)
     return json.loads(response.text)
 
 
