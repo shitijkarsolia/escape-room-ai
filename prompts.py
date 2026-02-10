@@ -161,6 +161,7 @@ def puzzle_generation_prompt(
     difficulty: int,
     previous_puzzles: Optional[List[dict]] = None,
     narrative_so_far: str = "",
+    is_easter_egg: bool = False,
 ) -> str:
     """Build the user prompt for generating a new puzzle."""
     theme_data = THEME_DESCRIPTIONS[theme]
@@ -184,6 +185,16 @@ def puzzle_generation_prompt(
             "tribute to the show that fans will love. Use in-universe language and references."
         )
 
+    easter_egg_text = ""
+    if is_easter_egg:
+        easter_egg_text = (
+            "\n🥚 EASTER EGG PUZZLE! This is a special bonus challenge worth DOUBLE POINTS. "
+            "Make it significantly harder than usual (difficulty 5/5 regardless of target). "
+            "Use an obscure or deep-cut reference from the show that only true fans would know. "
+            "The narrative_text should hint that this is a 'special hidden challenge' or 'secret bonus room'. "
+            "Make the puzzle type a cipher or complex logic puzzle."
+        )
+
     return f"""Generate puzzle {puzzle_number} of {total_puzzles} for the escape room.
 
 Theme: {theme_data['name']}
@@ -192,6 +203,7 @@ Target difficulty: {difficulty}/5
 {prev_context}
 {narrative_ctx}
 {extra}
+{easter_egg_text}
 {"This is the FINAL puzzle — make it the most challenging and climactic!" if puzzle_number == total_puzzles else ""}
 {"This is the FIRST puzzle — set the scene dramatically in the narrative_text." if puzzle_number == 1 else ""}"""
 

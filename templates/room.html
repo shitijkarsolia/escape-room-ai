@@ -3,7 +3,7 @@
 {% block title %}AI Escape Room — {{ theme_data.name }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex flex-col"
+<div class="min-h-screen flex flex-col room-{{ theme }}"
      style="--accent: {{ theme_data.gradient_to }}; --accent-dim: {{ theme_data.gradient_from }}; --accent-alpha: {{ theme_data.gradient_to }}33;">
 
     <!-- Top bar -->
@@ -58,6 +58,7 @@
                     <span id="puzzle-type">{{ puzzle.puzzle_type if puzzle else 'riddle' }}</span>
                 </span>
                 <span class="text-[11px] text-gray-600 uppercase tracking-widest">Puzzle #<span id="puzzle-number-badge">{{ puzzle_number }}</span></span>
+                <span id="easter-egg-badge" class="easter-egg-badge {{ 'hidden' if not puzzle or not puzzle.get('is_easter_egg') else '' }}">2x Bonus</span>
             </div>
 
             <p id="puzzle-question" class="font-display text-xl font-medium leading-relaxed text-gray-100 mb-8">

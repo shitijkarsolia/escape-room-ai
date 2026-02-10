@@ -1,6 +1,141 @@
 /* ================================================================
-   AI Escape Room — Game Client
+   AI Escape Room — Game Client + Theme Effects
    ================================================================ */
+
+// ---------------------------------------------------------------------------
+// Theme data: character reactions, celebrations, emojis
+// ---------------------------------------------------------------------------
+const THEME_DATA = {
+    theoffice: {
+        wrongReactions: [
+            { char: 'Dwight', msg: 'FALSE. That answer is incorrect. Idiot.' },
+            { char: 'Michael', msg: "That's what she said! ...wait, no. That's wrong." },
+            { char: 'Stanley', msg: 'Did I stutter? That. Is. Wrong.' },
+            { char: 'Kevin', msg: "It's not... it's not right. Like my chili on the floor." },
+            { char: 'Creed', msg: "I've been wrong before. I was in a cult once. Try again." },
+            { char: 'Jim', msg: '*looks at camera* ...Not quite.' },
+        ],
+        correctReactions: [
+            { char: 'Michael', msg: "That's what I'm talking about! I am so proud of you!" },
+            { char: 'Dwight', msg: 'Correct. You may have some Schrute beet juice as reward.' },
+            { char: 'Jim', msg: '*smirks* Nice one.' },
+        ],
+        celebrationEmojis: ['🏆', '📎', '☕', '🥨', '📋', '🖨️'],
+        victoryTitle: 'Dundie Award Winner!',
+        victoryEmoji: '🏆',
+    },
+    friends: {
+        wrongReactions: [
+            { char: 'Chandler', msg: 'Could you BE any more wrong?' },
+            { char: 'Ross', msg: "We were on a BREAK from correct answers, apparently." },
+            { char: 'Joey', msg: "Joey doesn't share food, and he doesn't share wrong answers either." },
+            { char: 'Phoebe', msg: "My grandmother's dead cat could answer better. And he's dead." },
+            { char: 'Monica', msg: "No no no no NO! That's not even CLOSE to organized correctly!" },
+            { char: 'Rachel', msg: "Oh honey... no." },
+        ],
+        correctReactions: [
+            { char: 'Joey', msg: 'How YOU doin\'! That was correct!' },
+            { char: 'Chandler', msg: 'Could that answer BE any more correct?' },
+            { char: 'Monica', msg: 'I KNOW! Isn\'t it the best?!' },
+        ],
+        celebrationEmojis: ['☕', '🛋️', '🍕', '🦞', '🎸', '👏'],
+        victoryTitle: "The One Where You Escaped!",
+        victoryEmoji: '☕',
+    },
+    got: {
+        wrongReactions: [
+            { char: 'Cersei', msg: 'When you play the game of puzzles, you win or you die. You are dying.' },
+            { char: 'Tyrion', msg: 'I drink and I know things. You clearly do neither.' },
+            { char: 'Arya', msg: 'A wrong answer has no name.' },
+            { char: 'Jon Snow', msg: "You know nothing." },
+            { char: 'The Hound', msg: "That answer is shit." },
+            { char: 'Olenna', msg: "Oh, you poor thing. That's not it at all." },
+        ],
+        correctReactions: [
+            { char: 'Tyrion', msg: 'A mind needs puzzles like a sword needs a whetstone. Well done.' },
+            { char: 'Daenerys', msg: 'You have proven yourself worthy. Dracarys... of celebration.' },
+            { char: 'Jon Snow', msg: "You know something after all." },
+        ],
+        celebrationEmojis: ['⚔️', '🐉', '👑', '🏰', '🐺', '🔥'],
+        victoryTitle: 'You Win the Iron Throne!',
+        victoryEmoji: '👑',
+    },
+    parksandrec: {
+        wrongReactions: [
+            { char: 'Ron', msg: "Wrong. I know more than you." },
+            { char: 'Leslie', msg: 'Oh no! But I believe in you! You are a beautiful, talented puzzle-solver!' },
+            { char: 'Andy', msg: "I don't even know what the question was but that seems wrong." },
+            { char: 'Tom', msg: 'That answer is NOT baller. That answer is... un-baller.' },
+            { char: 'April', msg: "That answer is dead to me. Like everything else." },
+            { char: 'Jerry/Larry/Gary', msg: "Oh geez, that's wrong? Classic me— wait, you said it." },
+        ],
+        correctReactions: [
+            { char: 'Leslie', msg: "YES! You beautiful tropical fish! You did it!" },
+            { char: 'Ron', msg: "*nods silently in approval*" },
+            { char: 'Tom', msg: "TREAT YO SELF to that correct answer!" },
+        ],
+        celebrationEmojis: ['🧇', '🌳', '🐴', '🏛️', '⭐', '🎉'],
+        victoryTitle: 'Treat Yo Self — You Escaped!',
+        victoryEmoji: '🧇',
+        correctSpecial: 'waffleRain',
+    },
+    bigbang: {
+        wrongReactions: [
+            { char: 'Sheldon', msg: '*knock knock knock* Wrong answer. *knock knock knock* Wrong answer. *knock knock knock* Wrong answer.' },
+            { char: 'Howard', msg: 'Even my mother could answer that, and she thinks the internet is a series of tubes.' },
+            { char: 'Raj', msg: '...I can\'t even talk to women, but I could answer that correctly.' },
+            { char: 'Amy', msg: 'Statistically speaking, that was a poor hypothesis.' },
+            { char: 'Leonard', msg: 'That\'s... not how science works.' },
+            { char: 'Sheldon', msg: 'BAZINGA! Just kidding. You\'re actually wrong.' },
+        ],
+        correctReactions: [
+            { char: 'Sheldon', msg: 'I\'ll allow it. Your answer meets the minimum threshold of adequacy.' },
+            { char: 'Howard', msg: 'Engineering-grade precision on that answer!' },
+            { char: 'Raj', msg: 'That was beautiful... like the stars aligning.' },
+        ],
+        celebrationEmojis: ['🧪', '🔬', '⚛️', '🚀', '🎮', '🤓'],
+        victoryTitle: 'Bazinga! You Escaped!',
+        victoryEmoji: '⚛️',
+    },
+    breakingbad: {
+        wrongReactions: [
+            { char: 'Walter', msg: "I am the one who knocks. And you are the one who's wrong." },
+            { char: 'Jesse', msg: "Yeah, SCIENCE! ...but that ain't it, bitch." },
+            { char: 'Mike', msg: "No half measures, and no half-right answers." },
+            { char: 'Saul', msg: "I once convinced a jury that black was white, but even I can't make that answer correct." },
+            { char: 'Gus', msg: "I will not accept this. I suggest you try again. Carefully." },
+            { char: 'Hank', msg: "Jesus, Marie, that's not even close." },
+        ],
+        correctReactions: [
+            { char: 'Walter', msg: "You're goddamn right." },
+            { char: 'Jesse', msg: "Yeah Mr. White! Yeah SCIENCE!" },
+            { char: 'Saul', msg: "'S all good, man! That's the right answer!" },
+        ],
+        celebrationEmojis: ['🧬', '💎', '🔵', '🧪', '💰', '🏜️'],
+        victoryTitle: 'Say My Name — You Escaped!',
+        victoryEmoji: '🧬',
+    },
+    custom: {
+        wrongReactions: [
+            { char: 'AI', msg: "Not quite! Look more carefully at the image." },
+            { char: 'AI', msg: "Close, but not the answer I'm looking for." },
+        ],
+        correctReactions: [
+            { char: 'AI', msg: "Excellent observation!" },
+        ],
+        celebrationEmojis: ['🎉', '✨', '🌟', '🎊', '🏆', '💫'],
+        victoryTitle: 'You Escaped!',
+        victoryEmoji: '🎉',
+    },
+};
+
+// Get current theme from body class
+function getCurrentTheme() {
+    const body = document.querySelector('[class*="room-"]');
+    if (!body) return null;
+    const match = body.className.match(/room-(\w+)/);
+    return match ? match[1] : null;
+}
 
 // ---------------------------------------------------------------------------
 // Timer
@@ -15,8 +150,7 @@ function startTimer() {
     timerInterval = setInterval(() => {
         remainingSeconds -= 1;
         if (remainingSeconds <= 0) {
-            remainingSeconds = 0;
-            clearInterval(timerInterval);
+            remainingSeconds = 0; clearInterval(timerInterval);
             window.location.href = '/result';
         }
         updateTimerDisplay();
@@ -32,6 +166,96 @@ function updateTimerDisplay() {
     timerEl.classList.remove('urgent', 'warning');
     if (remainingSeconds <= 60) timerEl.classList.add('urgent');
     else if (remainingSeconds <= 180) timerEl.classList.add('warning');
+}
+
+// ---------------------------------------------------------------------------
+// Character Reactions
+// ---------------------------------------------------------------------------
+function showCharacterReaction(correct) {
+    const theme = getCurrentTheme();
+    const data = THEME_DATA[theme];
+    if (!data) return;
+
+    const pool = correct ? data.correctReactions : data.wrongReactions;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+
+    // Remove existing reaction
+    document.querySelectorAll('.character-reaction').forEach(el => el.remove());
+
+    const el = document.createElement('div');
+    el.className = 'character-reaction';
+    el.innerHTML = `<div class="char-name" style="color: var(--accent);">${pick.char}</div><div>${pick.msg}</div>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+
+// ---------------------------------------------------------------------------
+// Correct Answer Special Effects
+// ---------------------------------------------------------------------------
+function showCorrectEffect() {
+    const theme = getCurrentTheme();
+    const data = THEME_DATA[theme];
+    if (!data) return;
+
+    if (data.correctSpecial === 'waffleRain') {
+        waffleRain();
+    }
+
+    // Mini celebration burst
+    const emojis = data.celebrationEmojis;
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            el.className = 'waffle-particle';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left = (15 + Math.random() * 70) + '%';
+            el.style.animationDuration = (2 + Math.random() * 2) + 's';
+            el.style.animationDelay = (Math.random() * 0.3) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }, i * 100);
+    }
+}
+
+function waffleRain() {
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            el.className = 'waffle-particle';
+            el.textContent = '🧇';
+            el.style.left = Math.random() * 100 + '%';
+            el.style.animationDuration = (2 + Math.random() * 3) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }, i * 150);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Victory Celebration
+// ---------------------------------------------------------------------------
+function showVictoryCelebration() {
+    const theme = getCurrentTheme();
+    const data = THEME_DATA[theme];
+    if (!data) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'celebration-overlay';
+    document.body.appendChild(overlay);
+
+    const emojis = data.celebrationEmojis;
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            el.className = 'celebration-emoji';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left = Math.random() * 100 + '%';
+            el.style.animationDelay = (Math.random() * 0.5) + 's';
+            el.style.animationDuration = (2 + Math.random() * 2) + 's';
+            overlay.appendChild(el);
+        }, i * 100);
+    }
+    setTimeout(() => overlay.remove(), 5000);
 }
 
 // ---------------------------------------------------------------------------
@@ -59,17 +283,28 @@ async function submitAnswer() {
         if (data.time_up) { window.location.href = data.redirect; return; }
         if (data.redirect) {
             showFeedback(true, data.feedback || 'Correct!');
-            setTimeout(() => { window.location.href = data.redirect; }, 1500);
+            showCharacterReaction(true);
+            showCorrectEffect();
+            showScorePopup(data.score);
+            if (data.is_easter_egg) showEasterEggBonus();
+            setTimeout(() => {
+                showVictoryCelebration();
+                setTimeout(() => { window.location.href = data.redirect; }, 2000);
+            }, 1000);
             return;
         }
         if (data.correct) {
             showFeedback(true, data.feedback || 'Correct!');
+            showCharacterReaction(true);
+            showCorrectEffect();
             showScorePopup(data.score);
+            if (data.is_easter_egg) showEasterEggBonus();
             currentScore += (data.score || 0);
             document.getElementById('score').textContent = currentScore;
-            setTimeout(() => { if (data.puzzle) transitionToPuzzle(data); }, 1500);
+            setTimeout(() => { if (data.puzzle) transitionToPuzzle(data); }, 1800);
         } else {
             showFeedback(false, data.feedback || 'Not quite. Try again!');
+            showCharacterReaction(false);
             shakeElement(document.getElementById('puzzle-card'));
             input.value = '';
             input.focus();
@@ -81,6 +316,17 @@ async function submitAnswer() {
         btn.disabled = false;
         btn.textContent = 'Submit';
     }
+}
+
+function showEasterEggBonus() {
+    const popup = document.createElement('div');
+    popup.className = 'score-popup';
+    popup.style.top = '60%';
+    popup.style.fontSize = '1.5rem';
+    popup.style.color = '#f59e0b';
+    popup.textContent = '🥚 2x EASTER EGG BONUS!';
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 2000);
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +364,6 @@ async function skipPuzzle() {
         const data = await resp.json();
         if (data.time_up) { window.location.href = data.redirect; return; }
         if (data.redirect) {
-            // Show answer then redirect
             const skipPanel = document.getElementById('skip-panel');
             document.getElementById('skip-answer').textContent = data.answer;
             skipPanel.classList.remove('hidden');
@@ -126,14 +371,11 @@ async function skipPuzzle() {
             return;
         }
         if (data.skipped) {
-            // Show the answer briefly
             const skipPanel = document.getElementById('skip-panel');
             document.getElementById('skip-answer').textContent = data.answer;
             skipPanel.classList.remove('hidden');
             document.getElementById('hint-panel').classList.add('hidden');
             document.getElementById('feedback').classList.add('hidden');
-
-            // Transition to next puzzle after showing the answer
             setTimeout(() => {
                 skipPanel.classList.add('hidden');
                 if (data.puzzle) transitionToPuzzle(data);
@@ -157,6 +399,11 @@ function transitionToPuzzle(data) {
         document.getElementById('puzzle-type').textContent = data.puzzle.puzzle_type || data.puzzle.type || 'riddle';
         document.getElementById('puzzle-number-badge').textContent = currentPuzzleNumber;
         document.getElementById('puzzle-num').textContent = currentPuzzleNumber;
+
+        // Easter egg badge
+        const eggBadge = document.getElementById('easter-egg-badge');
+        if (eggBadge) eggBadge.classList.toggle('hidden', !data.puzzle.is_easter_egg);
+
         const pct = Math.round(((currentPuzzleNumber - 1) / TOTAL_PUZZLES) * 100);
         document.getElementById('progress-bar').style.width = pct + '%';
         document.getElementById('progress-pct').textContent = pct + '%';
@@ -170,7 +417,10 @@ function transitionToPuzzle(data) {
         document.getElementById('answer-input').value = '';
         document.getElementById('feedback').classList.add('hidden');
         document.getElementById('hint-panel').classList.add('hidden');
-        document.getElementById('image-upload-panel').classList.add('hidden');
+        const skipPanel = document.getElementById('skip-panel');
+        if (skipPanel) skipPanel.classList.add('hidden');
+        const imgPanel = document.getElementById('image-upload-panel');
+        if (imgPanel) imgPanel.classList.add('hidden');
 
         card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
         card.style.opacity = '1';
@@ -199,18 +449,6 @@ function shakeElement(el) {
     setTimeout(() => el.classList.remove('animate-shake'), 500);
 }
 
-function animatePuzzleCard() {
-    const card = document.getElementById('puzzle-card');
-    card.style.transition = 'none';
-    card.style.transform = 'scale(0.97)';
-    card.style.opacity = '0.5';
-    setTimeout(() => {
-        card.style.transition = 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
-        card.style.transform = 'scale(1)';
-        card.style.opacity = '1';
-    }, 50);
-}
-
 // ---------------------------------------------------------------------------
 // Particles
 // ---------------------------------------------------------------------------
@@ -225,8 +463,7 @@ function initParticles() {
         p.style.animationDelay = Math.random() * 8 + 's';
         p.style.animationDuration = (8 + Math.random() * 8) + 's';
         const size = (1 + Math.random() * 2) + 'px';
-        p.style.width = size;
-        p.style.height = size;
+        p.style.width = size; p.style.height = size;
         container.appendChild(p);
     }
 }
@@ -251,12 +488,23 @@ function startTimeCheck() {
 }
 
 // ---------------------------------------------------------------------------
+// Result page celebration on load
+// ---------------------------------------------------------------------------
+function initResultPage() {
+    const resultEl = document.querySelector('[data-result-victory]');
+    if (resultEl && resultEl.dataset.resultVictory === 'true') {
+        showVictoryCelebration();
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
     startTimer();
     startTimeCheck();
+    initResultPage();
     const input = document.getElementById('answer-input');
     if (input) input.focus();
 });

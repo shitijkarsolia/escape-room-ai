@@ -1,27 +1,12 @@
 /* ================================================================
-   AI Escape Room — Modern Design System
+   AI Escape Room — Modern Design System + Theme Styles
    ================================================================ */
 
-/* ---------------------------------------------------------------------------
-   Base
-   --------------------------------------------------------------------------- */
-* {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-::selection {
-    background: var(--accent, #3b82f6);
-    color: #09090b;
-}
-
-/* ---------------------------------------------------------------------------
-   Scrollbar
-   --------------------------------------------------------------------------- */
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+::selection { background: var(--accent, #3b82f6); color: #09090b; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
 /* ---------------------------------------------------------------------------
    Mesh gradient background
@@ -37,37 +22,20 @@
    Particles
    --------------------------------------------------------------------------- */
 .particle {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    animation: particleDrift linear infinite;
-    pointer-events: none;
+    position: absolute; border-radius: 50%; background: rgba(255,255,255,0.06);
+    animation: particleDrift linear infinite; pointer-events: none;
 }
-
 @keyframes particleDrift {
-    0% {
-        transform: translateY(0) translateX(0);
-        opacity: 0;
-    }
-    5% { opacity: 1; }
-    95% { opacity: 1; }
-    100% {
-        transform: translateY(-100vh) translateX(30px);
-        opacity: 0;
-    }
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    5% { opacity: 1; } 95% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
 }
 
 /* ---------------------------------------------------------------------------
    Theme card hover
    --------------------------------------------------------------------------- */
-.theme-card {
-    cursor: pointer;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.theme-card:hover {
-    transform: translateY(-2px);
-}
+.theme-card { cursor: pointer; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.theme-card:hover { transform: translateY(-2px); }
 
 /* ---------------------------------------------------------------------------
    Input focus glow
@@ -82,52 +50,25 @@
 /* ---------------------------------------------------------------------------
    Timer urgency
    --------------------------------------------------------------------------- */
-#timer.urgent {
-    color: #f87171;
-    animation: timerPulse 1s ease-in-out infinite;
-}
-
-#timer.warning {
-    color: #fbbf24;
-}
-
-@keyframes timerPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
+#timer.urgent { color: #f87171; animation: timerPulse 1s ease-in-out infinite; }
+#timer.warning { color: #fbbf24; }
+@keyframes timerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* ---------------------------------------------------------------------------
    Feedback states
    --------------------------------------------------------------------------- */
-.feedback-correct {
-    background: rgba(34, 197, 94, 0.08);
-    border-color: rgba(34, 197, 94, 0.2);
-    color: #86efac;
-}
-
-.feedback-wrong {
-    background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-}
+.feedback-correct { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); color: #86efac; }
+.feedback-wrong { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
 
 /* ---------------------------------------------------------------------------
    Score popup
    --------------------------------------------------------------------------- */
 .score-popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 3rem;
-    font-weight: 700;
-    color: var(--accent, #3b82f6);
-    pointer-events: none;
-    z-index: 100;
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-family: 'Space Grotesk', sans-serif; font-size: 3rem; font-weight: 700;
+    color: var(--accent, #3b82f6); pointer-events: none; z-index: 100;
     animation: scoreRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-
 @keyframes scoreRise {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
     30% { transform: translate(-50%, -60%) scale(1.1); }
@@ -135,20 +76,184 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Button states
+   Buttons
    --------------------------------------------------------------------------- */
-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button, a, input { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
-button, a, input {
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* ======================================================================
+   THEME-SPECIFIC ROOM STYLES
+   ====================================================================== */
+
+/* ----- The Office: Dunder Mifflin memo style ----- */
+.room-theoffice #puzzle-card {
+    background: rgba(255, 253, 245, 0.04);
+    border: 1px dashed rgba(59, 130, 246, 0.2);
+    position: relative;
 }
+.room-theoffice #puzzle-card::before {
+    content: '📋 DUNDER MIFFLIN INC.';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(59, 130, 246, 0.5); background: #09090b; padding: 0 8px;
+    font-family: 'Inter', sans-serif;
+}
+.room-theoffice #narrative-text {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+    font-style: normal;
+}
+.room-theoffice .particle { background: rgba(59, 130, 246, 0.1); }
+
+/* ----- Friends: Central Perk vibes ----- */
+.room-friends #puzzle-card {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.04) 0%, rgba(255,255,255,0.02) 100%);
+    border-color: rgba(234, 179, 8, 0.15);
+    border-radius: 1rem;
+}
+.room-friends #puzzle-card::before {
+    content: '☕ CENTRAL PERK';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(234, 179, 8, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-friends #puzzle-card { position: relative; }
+.room-friends .particle { background: rgba(234, 179, 8, 0.12); border-radius: 0; width: 3px !important; height: 3px !important; }
+
+/* ----- Game of Thrones: Medieval parchment ----- */
+.room-got #puzzle-card {
+    background: linear-gradient(180deg, rgba(127, 29, 29, 0.06) 0%, rgba(255,255,255,0.02) 100%);
+    border: 1px solid rgba(220, 38, 38, 0.15);
+    border-image: linear-gradient(180deg, rgba(220,38,38,0.25), rgba(220,38,38,0.05)) 1;
+}
+.room-got #puzzle-question {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-style: italic;
+}
+.room-got #puzzle-card::before {
+    content: '⚔️ BY ROYAL DECREE';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(220, 38, 38, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-got #puzzle-card { position: relative; }
+.room-got #timer.urgent { text-shadow: 0 0 10px rgba(220, 38, 38, 0.8); }
+.room-got .particle { background: rgba(220, 38, 38, 0.08); }
+
+/* ----- Parks & Rec: Government form ----- */
+.room-parksandrec #puzzle-card {
+    background: rgba(34, 197, 94, 0.03);
+    border: 1px solid rgba(34, 197, 94, 0.12);
+    position: relative;
+}
+.room-parksandrec #puzzle-card::before {
+    content: '🌳 PAWNEE PARKS DEPT.';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(34, 197, 94, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-parksandrec .particle { background: rgba(34, 197, 94, 0.1); }
+
+/* ----- Big Bang Theory: Whiteboard ----- */
+.room-bigbang #puzzle-card {
+    background: rgba(20, 184, 166, 0.03);
+    border: 2px solid rgba(20, 184, 166, 0.1);
+    position: relative;
+}
+.room-bigbang #puzzle-card::before {
+    content: '🧪 SHELDON\'S PUZZLE GAUNTLET';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(20, 184, 166, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-bigbang #puzzle-question {
+    font-family: 'Courier New', monospace;
+}
+.room-bigbang .particle { background: rgba(20, 184, 166, 0.08); }
+
+/* ----- Breaking Bad: Lab style ----- */
+.room-breakingbad #puzzle-card {
+    background: linear-gradient(180deg, rgba(132, 204, 22, 0.04) 0%, rgba(0,0,0,0) 100%);
+    border: 1px solid rgba(132, 204, 22, 0.12);
+    position: relative;
+}
+.room-breakingbad #puzzle-card::before {
+    content: '🧬 HEISENBERG LAB NOTES';
+    position: absolute; top: -10px; left: 20px;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(132, 204, 22, 0.5); background: #09090b; padding: 0 8px;
+}
+.room-breakingbad #puzzle-type {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.3em;
+}
+.room-breakingbad .particle { background: rgba(132, 204, 22, 0.1); }
 
 /* ---------------------------------------------------------------------------
-   Responsive
+   Celebration Overlays
    --------------------------------------------------------------------------- */
-@media (max-width: 640px) {
-    #puzzle-card { padding: 1.5rem; }
+.celebration-overlay {
+    position: fixed; inset: 0; z-index: 200; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    animation: celebFade 3s ease-out forwards;
 }
+@keyframes celebFade {
+    0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+}
+.celebration-emoji {
+    font-size: 4rem; animation: celebDrop 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    position: absolute;
+}
+@keyframes celebDrop {
+    0% { transform: translateY(-100vh) rotate(0deg); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+/* Character reaction bubble */
+.character-reaction {
+    position: fixed; bottom: 20px; right: 20px; z-index: 150;
+    max-width: 320px; padding: 16px 20px;
+    border-radius: 16px 16px 4px 16px;
+    background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: reactionSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+               reactionFade 0.5s ease-in 3s forwards;
+    font-size: 14px; color: #e5e7eb;
+}
+@keyframes reactionSlide {
+    0% { transform: translateX(100%) translateY(20px); opacity: 0; }
+    100% { transform: translateX(0) translateY(0); opacity: 1; }
+}
+@keyframes reactionFade {
+    0% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); }
+}
+.character-reaction .char-name {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+    margin-bottom: 4px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Easter egg badge */
+.easter-egg-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #09090b; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 9999px;
+    animation: eggPulse 1.5s ease-in-out infinite;
+    text-transform: uppercase; letter-spacing: 0.1em;
+}
+@keyframes eggPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+/* Waffle rain (Parks & Rec) */
+.waffle-particle {
+    position: fixed; font-size: 2rem; pointer-events: none; z-index: 200;
+    animation: waffleFall linear forwards;
+}
+@keyframes waffleFall {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@media (max-width: 640px) { #puzzle-card { padding: 1.5rem; } }

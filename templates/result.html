@@ -3,15 +3,16 @@
 {% block title %}AI Escape Room — {{ "Escaped!" if breakdown.victory else "Time's Up!" }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex flex-col items-center justify-center px-4 py-16"
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-16 room-{{ theme }}"
+     data-result-victory="{{ 'true' if breakdown.victory else 'false' }}"
      style="--accent: {{ theme_data.gradient_to }}; --accent-dim: {{ theme_data.gradient_from }}; --accent-alpha: {{ theme_data.gradient_to }}33;">
 
     <!-- Result header -->
     <div class="text-center mb-10 animate-slide-up">
         {% if breakdown.victory %}
-        <div class="text-7xl mb-5 animate-float">🎉</div>
+        <div class="text-7xl mb-5 animate-float" id="victory-emoji">🎉</div>
         <h1 class="font-display text-5xl md:text-6xl font-bold mb-3">
-            <span class="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">
+            <span class="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent" id="victory-title">
                 You Escaped!
             </span>
         </h1>
@@ -100,4 +101,26 @@
         Powered by <span class="text-gray-500">Gemini 3</span> — every puzzle is uniquely generated
     </p>
 </div>
+
+<script>
+// Theme-specific victory customization
+document.addEventListener('DOMContentLoaded', () => {
+    const VICTORY_DATA = {
+        theoffice:   { title: 'Dundie Award Winner!', emoji: '🏆' },
+        friends:     { title: 'The One Where You Escaped!', emoji: '☕' },
+        got:         { title: 'You Win the Iron Throne!', emoji: '👑' },
+        parksandrec: { title: 'Treat Yo Self — You Escaped!', emoji: '🧇' },
+        bigbang:     { title: 'Bazinga! You Escaped!', emoji: '⚛️' },
+        breakingbad: { title: 'Say My Name — You Escaped!', emoji: '🧬' },
+    };
+    const theme = '{{ theme }}';
+    const data = VICTORY_DATA[theme];
+    if (data) {
+        const title = document.getElementById('victory-title');
+        const emoji = document.getElementById('victory-emoji');
+        if (title) title.textContent = data.title;
+        if (emoji) emoji.textContent = data.emoji;
+    }
+});
+</script>
 {% endblock %}

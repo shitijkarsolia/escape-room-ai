@@ -1,6 +1,7 @@
 """Game engine: state machine, puzzle lifecycle, scoring, and session management."""
 
 import time
+import random
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
 
@@ -36,13 +37,17 @@ class PuzzleState:
     solved: bool = False
     solve_time: float = 0.0  # seconds to solve
     started_at: float = 0.0
+    is_easter_egg: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "PuzzleState":
-        return cls(**data)
+        # Filter to only known fields (handles old sessions)
+        import dataclasses
+        valid = {f.name for f in dataclasses.fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in valid})
 
 
 @dataclass
@@ -59,13 +64,17 @@ class GameState:
     narrative_log: List[str] = field(default_factory=list)
     difficulty_level: int = 2  # adaptive difficulty 1-5
     solved_count: int = 0
+    easter_egg_puzzle: int = -1  # index of the easter egg puzzle
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "GameState":
-        return cls(**data)
+        # Filter to only known fields (handles old sessions)
+        import dataclasses
+        valid = {f.name for f in dataclasses.fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in valid})
 
     @property
     def elapsed_seconds(self) -> float:
@@ -103,6 +112,7 @@ class GameEngine:
             status="playing",
             start_time=time.time(),
             difficulty_level=2,
+            easter_egg_puzzle=random.randint(1, TOTAL_PUZZLES - 1),  # never first puzzle
         )
         return state
 
@@ -118,6 +128,8 @@ class GameEngine:
 
         narrative_so_far = " ".join(state.narrative_log) if state.narrative_log else ""
 
+        is_egg = (state.current_puzzle_index == state.easter_egg_puzzle)
+
         prompt = puzzle_generation_prompt(
             theme=state.theme,
             puzzle_number=state.current_puzzle_index + 1,
@@ -125,6 +137,7 @@ class GameEngine:
             difficulty=state.difficulty_level,
             previous_puzzles=previous_puzzles if previous_puzzles else None,
             narrative_so_far=narrative_so_far,
+            is_easter_egg=is_egg,
         )
 
         result = generate_json(PUZZLE_GENERATION_SYSTEM, prompt)
@@ -137,6 +150,7 @@ class GameEngine:
             narrative_text=result.get("narrative_text", ""),
             difficulty=result.get("difficulty", state.difficulty_level),
             started_at=time.time(),
+            is_easter_egg=is_egg,
         )
 
         state.puzzles.append(puzzle.to_dict())
@@ -180,6 +194,8 @@ class GameEngine:
             hint_penalty = puzzle.hints_used * 200
             attempt_penalty = (puzzle.attempts - 1) * 100
             puzzle_score = max(100, base_score + time_bonus - hint_penalty - attempt_penalty)
+            if puzzle.is_easter_egg:
+                puzzle_score *= 2  # 2x easter egg multiplier
             state.score += puzzle_score
 
             # Update adaptive difficulty
@@ -194,6 +210,7 @@ class GameEngine:
                     "score": puzzle_score,
                     "game_complete": True,
                     "total_score": state.score,
+                    "is_easter_egg": puzzle.is_easter_egg,
                 }
 
             # Move to next puzzle
@@ -204,6 +221,7 @@ class GameEngine:
                 "feedback": feedback,
                 "score": puzzle_score,
                 "next_puzzle": True,
+                "is_easter_egg": puzzle.is_easter_egg,
             }
         else:
             state.update_current_puzzle(puzzle)
