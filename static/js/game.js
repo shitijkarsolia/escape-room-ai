@@ -393,9 +393,11 @@ async function submitAnswer() {
             showCharacterReaction(true);
             showCorrectEffect();
             showScorePopup(data.score);
+            fireConfetti();
             if (data.is_easter_egg) showEasterEggBonus();
             setTimeout(() => {
                 showVictoryCelebration();
+                fireConfetti();
                 setTimeout(() => { window.location.href = data.redirect; }, 2000);
             }, 1000);
             return;
@@ -405,6 +407,8 @@ async function submitAnswer() {
             showCharacterReaction(true);
             showCorrectEffect();
             showScorePopup(data.score);
+            fireConfetti();
+            incrementStreak();
             if (data.is_easter_egg) showEasterEggBonus();
             currentScore += (data.score || 0);
             document.getElementById('score').textContent = currentScore;
@@ -421,6 +425,7 @@ async function submitAnswer() {
         } else {
             showFeedback(false, data.feedback || 'Not quite. Try again!');
             showCharacterReaction(false);
+            resetStreak();
             shakeElement(document.getElementById('puzzle-card'));
             input.value = '';
             input.focus();
@@ -511,7 +516,7 @@ function transitionToPuzzle(data) {
 
     setTimeout(() => {
         currentPuzzleNumber = data.puzzle_number || (currentPuzzleNumber + 1);
-        document.getElementById('puzzle-question').textContent = data.puzzle.question;
+        typeText(document.getElementById('puzzle-question'), data.puzzle.question);
         document.getElementById('puzzle-type').textContent = data.puzzle.puzzle_type || data.puzzle.type || 'riddle';
         document.getElementById('puzzle-number-badge').textContent = currentPuzzleNumber;
         document.getElementById('puzzle-num').textContent = currentPuzzleNumber;
@@ -604,12 +609,115 @@ function startTimeCheck() {
 }
 
 // ---------------------------------------------------------------------------
+// Typing Effect
+// ---------------------------------------------------------------------------
+let typeTimer = null;
+function typeText(el, text, speed) {
+    if (typeTimer) clearInterval(typeTimer);
+    el.textContent = '';
+    el.style.borderRight = '2px solid var(--accent, #3b82f6)';
+    let i = 0;
+    const s = speed || 18;
+    typeTimer = setInterval(() => {
+        if (i < text.length) {
+            el.textContent += text.charAt(i);
+            i++;
+        } else {
+            clearInterval(typeTimer);
+            typeTimer = null;
+            el.style.borderRight = 'none';
+        }
+    }, s);
+}
+
+// ---------------------------------------------------------------------------
+// Puzzle Card Tilt (parallax mouse effect)
+// ---------------------------------------------------------------------------
+function initCardTilt() {
+    const card = document.getElementById('puzzle-card');
+    if (!card) return;
+
+    card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `perspective(800px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg) scale(1.01)`;
+    });
+
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(800px) rotateY(0) rotateX(0) scale(1)';
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Streak Counter
+// ---------------------------------------------------------------------------
+let currentStreak = 0;
+
+function incrementStreak() {
+    currentStreak++;
+    if (currentStreak >= 2) showStreakBadge();
+}
+
+function resetStreak() {
+    currentStreak = 0;
+    hideStreakBadge();
+}
+
+function showStreakBadge() {
+    let badge = document.getElementById('streak-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'streak-badge';
+        badge.className = 'streak-badge';
+        document.body.appendChild(badge);
+    }
+    badge.innerHTML = `<span class="streak-fire">🔥</span><span class="streak-count">${currentStreak}</span><span class="streak-label">STREAK</span>`;
+    badge.classList.remove('hidden');
+    badge.classList.add('streak-pop');
+    setTimeout(() => badge.classList.remove('streak-pop'), 500);
+}
+
+function hideStreakBadge() {
+    const badge = document.getElementById('streak-badge');
+    if (badge) badge.classList.add('hidden');
+}
+
+// ---------------------------------------------------------------------------
+// Confetti Cannon
+// ---------------------------------------------------------------------------
+function fireConfetti() {
+    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#01a3a4', '#f368e0'];
+    const count = 60;
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.style.left = (40 + Math.random() * 20) + '%';
+            el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            el.style.setProperty('--dx', (Math.random() - 0.5) * 600 + 'px');
+            el.style.setProperty('--dy', -(200 + Math.random() * 300) + 'px');
+            el.style.setProperty('--rot', Math.random() * 720 - 360 + 'deg');
+            el.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+            if (Math.random() > 0.5) {
+                el.style.width = '4px'; el.style.height = '12px';
+            } else {
+                el.style.width = '8px'; el.style.height = '8px'; el.style.borderRadius = '50%';
+            }
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3500);
+        }, i * 15);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Result page celebration on load
 // ---------------------------------------------------------------------------
 function initResultPage() {
     const resultEl = document.querySelector('[data-result-victory]');
     if (resultEl && resultEl.dataset.resultVictory === 'true') {
         showVictoryCelebration();
+        fireConfetti();
     }
 }
 
@@ -618,9 +726,18 @@ function initResultPage() {
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
+    initCardTilt();
     startTimer();
     startTimeCheck();
     initResultPage();
+
+    // Type the initial puzzle question on first load
+    const q = document.getElementById('puzzle-question');
+    if (q && q.textContent.trim() && q.textContent.trim() !== 'Loading puzzle...') {
+        const text = q.textContent;
+        typeText(q, text, 15);
+    }
+
     const input = document.getElementById('answer-input');
     if (input) input.focus();
 });

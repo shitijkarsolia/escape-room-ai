@@ -296,6 +296,67 @@ button, a, input { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 }
 
 /* ---------------------------------------------------------------------------
+   Typing cursor
+   --------------------------------------------------------------------------- */
+#puzzle-question {
+    transition: border-color 0.3s;
+}
+
+/* ---------------------------------------------------------------------------
+   Puzzle card tilt
+   --------------------------------------------------------------------------- */
+#puzzle-card {
+    transition: transform 0.15s ease-out, opacity 0.5s, box-shadow 0.3s;
+    will-change: transform;
+}
+
+/* ---------------------------------------------------------------------------
+   Streak Badge
+   --------------------------------------------------------------------------- */
+.streak-badge {
+    position: fixed; top: 80px; right: 16px; z-index: 100;
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 14px; border-radius: 9999px;
+    background: rgba(255,255,255,0.06); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: 'Space Grotesk', sans-serif;
+}
+.streak-badge.hidden { display: none; }
+.streak-fire { font-size: 1.2rem; animation: fireFlicker 0.5s ease-in-out infinite alternate; }
+.streak-count { font-size: 1.1rem; font-weight: 700; color: #fbbf24; }
+.streak-label { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.15em; text-transform: uppercase; margin-left: 2px; }
+.streak-pop { animation: streakPop 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes fireFlicker {
+    0% { transform: scale(1) rotate(-5deg); }
+    100% { transform: scale(1.15) rotate(5deg); }
+}
+@keyframes streakPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+   Confetti
+   --------------------------------------------------------------------------- */
+.confetti-piece {
+    position: fixed; top: 60%; left: 50%; z-index: 250;
+    width: 6px; height: 10px; pointer-events: none;
+    animation: confettiBurst ease-out forwards;
+}
+@keyframes confettiBurst {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+        opacity: 0;
+    }
+}
+
+/* ---------------------------------------------------------------------------
    Puzzle Loading Overlay
    --------------------------------------------------------------------------- */
 #puzzle-loading {
