@@ -4,47 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI Escape Room{% endblock %}</title>
+
+    <!-- Fonts: Inter for body, Space Grotesk for headings -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Space Grotesk', 'Inter', 'sans-serif'],
+                    },
                     colors: {
-                        temple: { light: '#f59e0b', DEFAULT: '#d97706', dark: '#92400e' },
-                        space: { light: '#22d3ee', DEFAULT: '#06b6d4', dark: '#164e63' },
+                        temple:  { light: '#fbbf24', DEFAULT: '#d97706', dark: '#92400e' },
+                        space:   { light: '#22d3ee', DEFAULT: '#06b6d4', dark: '#164e63' },
                         haunted: { light: '#c084fc', DEFAULT: '#a855f7', dark: '#581c87' },
+                        office:  { light: '#60a5fa', DEFAULT: '#3b82f6', dark: '#1e3a5f' },
+                        friends: { light: '#fde047', DEFAULT: '#eab308', dark: '#713f12' },
+                        got:     { light: '#f87171', DEFAULT: '#dc2626', dark: '#7f1d1d' },
                     },
                     animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'glow': 'glow 2s ease-in-out infinite alternate',
                         'float': 'float 6s ease-in-out infinite',
                         'shake': 'shake 0.5s ease-in-out',
-                        'slide-in': 'slideIn 0.5s ease-out',
-                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'slide-in-right': 'slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'fade-in-delay': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
+                        'scale-in': 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                        'gradient-shift': 'gradientShift 8s ease infinite',
                     },
                     keyframes: {
-                        glow: {
-                            '0%': { boxShadow: '0 0 5px currentColor, 0 0 10px currentColor' },
-                            '100%': { boxShadow: '0 0 20px currentColor, 0 0 40px currentColor' },
-                        },
                         float: {
                             '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-10px)' },
+                            '50%': { transform: 'translateY(-12px)' },
                         },
                         shake: {
                             '0%, 100%': { transform: 'translateX(0)' },
                             '25%': { transform: 'translateX(-5px)' },
                             '75%': { transform: 'translateX(5px)' },
                         },
-                        slideIn: {
-                            '0%': { transform: 'translateX(100%)', opacity: '0' },
-                            '100%': { transform: 'translateX(0)', opacity: '1' },
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(30px)' },
                             '100%': { opacity: '1', transform: 'translateY(0)' },
                         },
+                        slideInRight: {
+                            '0%': { opacity: '0', transform: 'translateX(30px)' },
+                            '100%': { opacity: '1', transform: 'translateX(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        scaleIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.8' },
+                        },
+                        gradientShift: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        },
+                    },
+                    backdropBlur: {
+                        xs: '2px',
                     },
                 },
             },
@@ -53,8 +84,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/game.css') }}">
     {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen overflow-x-hidden">
-    <!-- Background particles -->
+<body class="bg-[#09090b] text-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
+    <!-- Animated mesh gradient background -->
+    <div id="mesh-bg" class="fixed inset-0 pointer-events-none z-0 opacity-40"></div>
+    <!-- Particles -->
     <div id="particles" class="fixed inset-0 pointer-events-none z-0"></div>
 
     <!-- Main content -->

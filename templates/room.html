@@ -2,161 +2,131 @@
 
 {% block title %}AI Escape Room — {{ theme_data.name }}{% endblock %}
 
-{% block head %}
-<style>
-    .theme-accent { color: var(--accent-color); }
-    .theme-accent-bg { background-color: var(--accent-color); }
-    .theme-border { border-color: var(--accent-color); }
-    .theme-glow { box-shadow: 0 0 20px var(--accent-color-alpha); }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="min-h-screen flex flex-col theme-{{ theme }}"
-     style="--accent-color: {{ {'temple':'#d97706','space':'#06b6d4','haunted':'#a855f7'}[theme] }};
-            --accent-color-alpha: {{ {'temple':'rgba(217,119,6,0.3)','space':'rgba(6,182,212,0.3)','haunted':'rgba(168,85,247,0.3)'}[theme] }};">
+<div class="min-h-screen flex flex-col"
+     style="--accent: {{ theme_data.gradient_to }}; --accent-dim: {{ theme_data.gradient_from }}; --accent-alpha: {{ theme_data.gradient_to }}33;">
 
-    <!-- Top bar: timer + progress + score -->
-    <header class="sticky top-0 z-50 bg-gray-950/90 backdrop-blur border-b border-gray-800 px-4 py-3">
-        <div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl">
+        <div class="max-w-3xl mx-auto flex items-center justify-between gap-6 px-4 py-3">
             <!-- Timer -->
-            <div class="flex items-center gap-2">
-                <div id="timer-icon" class="text-2xl">⏱️</div>
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-base">⏱️</div>
                 <div>
-                    <div id="timer" class="text-2xl font-mono font-bold tabular-nums" data-remaining="{{ remaining_seconds }}">
-                        --:--
-                    </div>
-                    <div class="text-xs text-gray-500">remaining</div>
+                    <div id="timer" class="font-display text-xl font-bold tabular-nums tracking-tight" data-remaining="{{ remaining_seconds }}">--:--</div>
+                    <div class="text-[10px] text-gray-600 uppercase tracking-widest">remaining</div>
                 </div>
             </div>
 
-            <!-- Progress bar -->
-            <div class="flex-1 max-w-xs">
-                <div class="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Puzzle <span id="puzzle-num">{{ puzzle_number }}</span> / {{ total_puzzles }}</span>
+            <!-- Progress -->
+            <div class="flex-1 max-w-[200px]">
+                <div class="flex justify-between text-[10px] text-gray-500 mb-1.5 uppercase tracking-widest">
+                    <span>Puzzle <span id="puzzle-num">{{ puzzle_number }}</span>/{{ total_puzzles }}</span>
                     <span id="progress-pct">{{ ((puzzle_number - 1) / total_puzzles * 100) | int }}%</span>
                 </div>
-                <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-1 bg-white/[0.06] rounded-full overflow-hidden">
                     <div id="progress-bar" class="h-full rounded-full transition-all duration-700 ease-out"
-                         style="width: {{ ((puzzle_number - 1) / total_puzzles * 100) | int }}%; background-color: var(--accent-color);">
-                    </div>
+                         style="width: {{ ((puzzle_number - 1) / total_puzzles * 100) | int }}%; background: var(--accent);"></div>
                 </div>
             </div>
 
             <!-- Score -->
             <div class="text-right">
-                <div id="score" class="text-2xl font-bold" style="color: var(--accent-color);">{{ score }}</div>
-                <div class="text-xs text-gray-500">score</div>
+                <div id="score" class="font-display text-xl font-bold" style="color: var(--accent);">{{ score }}</div>
+                <div class="text-[10px] text-gray-600 uppercase tracking-widest">score</div>
             </div>
         </div>
     </header>
 
-    <!-- Main game area -->
-    <div class="flex-1 flex flex-col items-center px-4 py-8 max-w-3xl mx-auto w-full">
-        <!-- Narrative text -->
+    <!-- Game area -->
+    <div class="flex-1 flex flex-col items-center px-4 py-8 max-w-2xl mx-auto w-full">
+
+        <!-- Narrative -->
         <div id="narrative" class="w-full mb-6 animate-fade-in">
-            <div id="narrative-text" class="text-gray-300 italic text-center text-lg leading-relaxed px-4 py-3 rounded-xl bg-gray-900/50 border border-gray-800">
+            <p id="narrative-text" class="text-gray-400 italic text-center text-[15px] leading-relaxed px-6 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
                 {{ puzzle.narrative_text if puzzle else '' }}
-            </div>
+            </p>
         </div>
 
         <!-- Puzzle card -->
-        <div id="puzzle-card" class="w-full bg-gray-900/80 backdrop-blur border border-gray-800 rounded-2xl p-8 mb-6 animate-fade-in theme-glow">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
-                      style="background-color: var(--accent-color-alpha); color: var(--accent-color);">
+        <div id="puzzle-card" class="w-full rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-8 mb-6 animate-scale-in transition-all duration-500"
+             style="box-shadow: 0 0 60px -20px var(--accent-alpha);">
+
+            <div class="flex items-center gap-2.5 mb-5">
+                <span class="text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full border"
+                      style="border-color: var(--accent-alpha); color: var(--accent); background: var(--accent-alpha);">
                     <span id="puzzle-type">{{ puzzle.puzzle_type if puzzle else 'riddle' }}</span>
                 </span>
-                <span class="text-xs text-gray-500">Puzzle #<span id="puzzle-number-badge">{{ puzzle_number }}</span></span>
+                <span class="text-[11px] text-gray-600 uppercase tracking-widest">Puzzle #<span id="puzzle-number-badge">{{ puzzle_number }}</span></span>
             </div>
 
-            <p id="puzzle-question" class="text-xl font-medium leading-relaxed mb-6">
+            <p id="puzzle-question" class="font-display text-xl font-medium leading-relaxed text-gray-100 mb-8">
                 {{ puzzle.question if puzzle else 'Loading puzzle...' }}
             </p>
 
             <!-- Answer input -->
             <div class="flex gap-3">
-                <input
-                    type="text"
-                    id="answer-input"
-                    placeholder="Type your answer..."
+                <input type="text" id="answer-input" placeholder="Type your answer..."
                     autocomplete="off"
-                    class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors placeholder-gray-600"
-                    onkeydown="if(event.key==='Enter') submitAnswer()"
-                >
-                <button
-                    id="submit-btn"
-                    onclick="submitAnswer()"
-                    class="px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
-                    style="background-color: var(--accent-color); color: #111827;"
-                >
+                    class="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-base font-medium focus:outline-none focus:border-white/20 transition-all placeholder-gray-600"
+                    onkeydown="if(event.key==='Enter') submitAnswer()">
+                <button id="submit-btn" onclick="submitAnswer()"
+                    class="px-6 py-3 rounded-xl font-display font-semibold text-base text-[#09090b] transition-all duration-200 hover:brightness-110 active:scale-95"
+                    style="background: var(--accent);">
                     Submit
                 </button>
             </div>
 
-            <!-- Feedback area -->
-            <div id="feedback" class="hidden mt-4 p-4 rounded-xl text-sm animate-fade-in"></div>
+            <!-- Feedback -->
+            <div id="feedback" class="hidden mt-5 p-4 rounded-xl text-sm border animate-fade-in"></div>
         </div>
 
-        <!-- Action buttons -->
-        <div class="flex gap-4 w-full mb-6">
-            <button
-                onclick="requestHint()"
-                id="hint-btn"
-                class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
-            >
+        <!-- Actions -->
+        <div class="flex gap-3 w-full mb-6">
+            <button onclick="requestHint()" id="hint-btn"
+                class="flex-1 rounded-xl px-4 py-3 text-sm font-medium bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-center gap-2">
                 <span>💡</span>
                 <span>Get Hint</span>
-                <span class="text-gray-500 text-xs">(-60s)</span>
+                <span class="text-gray-600 text-xs ml-1">-60s</span>
             </button>
-            <button
-                onclick="toggleImageUpload()"
-                id="upload-btn"
-                class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
-            >
+            <button onclick="toggleImageUpload()" id="upload-btn"
+                class="flex-1 rounded-xl px-4 py-3 text-sm font-medium bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-center gap-2">
                 <span>📷</span>
                 <span>Upload Clue</span>
             </button>
         </div>
 
-        <!-- Image upload panel (hidden by default) -->
-        <div id="image-upload-panel" class="hidden w-full mb-6 animate-slide-in">
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6">
-                <p class="text-gray-400 text-sm mb-3">Upload an image and Gemini 3 will create a visual puzzle from it.</p>
+        <!-- Image upload panel -->
+        <div id="image-upload-panel" class="hidden w-full mb-6 animate-slide-in-right">
+            <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+                <p class="text-gray-500 text-sm mb-3">Upload an image and Gemini 3 will create a visual puzzle from it.</p>
                 <div class="flex gap-3">
-                    <input
-                        type="file"
-                        id="image-input"
-                        accept="image/*"
-                        class="flex-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600"
-                    >
-                    <button
-                        onclick="uploadClue()"
-                        class="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105"
-                        style="background-color: var(--accent-color); color: #111827;"
-                    >
+                    <input type="file" id="image-input" accept="image/*"
+                        class="flex-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-white/[0.06] file:text-gray-300 hover:file:bg-white/10 file:transition-colors">
+                    <button onclick="uploadClue()"
+                        class="px-5 py-2 rounded-lg font-semibold text-sm text-[#09090b] transition-all hover:brightness-110"
+                        style="background: var(--accent);">
                         Analyze
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Hint display -->
-        <div id="hint-panel" class="hidden w-full mb-6 animate-slide-in">
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6">
+        <!-- Hint panel -->
+        <div id="hint-panel" class="hidden w-full mb-6 animate-slide-in-right">
+            <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
                 <div class="flex items-center gap-2 mb-2">
-                    <span class="text-lg">💡</span>
-                    <span class="text-sm font-semibold text-gray-300">Hint</span>
+                    <span class="text-base">💡</span>
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hint</span>
                 </div>
-                <p id="hint-text" class="text-gray-300"></p>
-                <p id="hint-encouragement" class="text-gray-500 text-sm mt-2 italic"></p>
+                <p id="hint-text" class="text-gray-300 leading-relaxed"></p>
+                <p id="hint-encouragement" class="text-gray-600 text-sm mt-2 italic"></p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Initialize game state from server data
     const TOTAL_PUZZLES = {{ total_puzzles }};
     let remainingSeconds = {{ remaining_seconds }};
     let currentPuzzleNumber = {{ puzzle_number }};

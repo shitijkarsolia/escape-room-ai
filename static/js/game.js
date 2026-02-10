@@ -1,6 +1,5 @@
 /* ================================================================
-   AI Escape Room — Game Client Logic
-   Timer, fetch API calls, UI updates, transitions
+   AI Escape Room — Game Client
    ================================================================ */
 
 // ---------------------------------------------------------------------------
@@ -11,17 +10,14 @@ let timerInterval = null;
 function startTimer() {
     const timerEl = document.getElementById('timer');
     if (!timerEl) return;
-
     remainingSeconds = parseFloat(timerEl.dataset.remaining);
-
     updateTimerDisplay();
-
     timerInterval = setInterval(() => {
         remainingSeconds -= 1;
         if (remainingSeconds <= 0) {
             remainingSeconds = 0;
             clearInterval(timerInterval);
-            handleTimeUp();
+            window.location.href = '/result';
         }
         updateTimerDisplay();
     }, 1000);
@@ -30,23 +26,12 @@ function startTimer() {
 function updateTimerDisplay() {
     const timerEl = document.getElementById('timer');
     if (!timerEl) return;
-
     const mins = Math.floor(remainingSeconds / 60);
     const secs = Math.floor(remainingSeconds % 60);
     timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-
-    // Urgency styling
-    if (remainingSeconds <= 60) {
-        timerEl.classList.add('text-red-400');
-        timerEl.classList.add('animate-pulse');
-    } else if (remainingSeconds <= 180) {
-        timerEl.classList.add('text-amber-400');
-        timerEl.classList.remove('text-red-400');
-    }
-}
-
-function handleTimeUp() {
-    window.location.href = '/result';
+    timerEl.classList.remove('urgent', 'warning');
+    if (remainingSeconds <= 60) timerEl.classList.add('urgent');
+    else if (remainingSeconds <= 180) timerEl.classList.add('warning');
 }
 
 // ---------------------------------------------------------------------------
@@ -54,18 +39,14 @@ function handleTimeUp() {
 // ---------------------------------------------------------------------------
 async function submitAnswer() {
     if (isSubmitting) return;
-
     const input = document.getElementById('answer-input');
     const answer = input.value.trim();
-    if (!answer) {
-        shakeElement(input);
-        return;
-    }
+    if (!answer) { shakeElement(input); return; }
 
     isSubmitting = true;
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = '...';
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></span>';
 
     try {
         const resp = await fetch('/answer', {
@@ -75,32 +56,18 @@ async function submitAnswer() {
         });
         const data = await resp.json();
 
-        if (data.time_up) {
-            window.location.href = data.redirect;
-            return;
-        }
-
+        if (data.time_up) { window.location.href = data.redirect; return; }
         if (data.redirect) {
-            // Game complete
             showFeedback(true, data.feedback || 'Correct!');
             setTimeout(() => { window.location.href = data.redirect; }, 1500);
             return;
         }
-
         if (data.correct) {
             showFeedback(true, data.feedback || 'Correct!');
             showScorePopup(data.score);
-
-            // Update score
             currentScore += (data.score || 0);
             document.getElementById('score').textContent = currentScore;
-
-            // Transition to next puzzle after brief delay
-            setTimeout(() => {
-                if (data.puzzle) {
-                    transitionToPuzzle(data);
-                }
-            }, 1500);
+            setTimeout(() => { if (data.puzzle) transitionToPuzzle(data); }, 1500);
         } else {
             showFeedback(false, data.feedback || 'Not quite. Try again!');
             shakeElement(document.getElementById('puzzle-card'));
@@ -111,191 +78,117 @@ async function submitAnswer() {
         showFeedback(false, 'Connection error. Please try again.');
     } finally {
         isSubmitting = false;
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit';
+        btn.disabled = false;
+        btn.textContent = 'Submit';
     }
 }
 
 // ---------------------------------------------------------------------------
-// Hint System
+// Hints
 // ---------------------------------------------------------------------------
 async function requestHint() {
-    const hintBtn = document.getElementById('hint-btn');
-    hintBtn.disabled = true;
-
+    const btn = document.getElementById('hint-btn');
+    btn.disabled = true;
     try {
-        const resp = await fetch('/hint', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const resp = await fetch('/hint', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await resp.json();
-
-        if (data.time_up) {
-            window.location.href = data.redirect;
-            return;
-        }
-
-        // Show hint panel
-        const hintPanel = document.getElementById('hint-panel');
+        if (data.time_up) { window.location.href = data.redirect; return; }
         document.getElementById('hint-text').textContent = data.hint;
         document.getElementById('hint-encouragement').textContent = data.encouragement || '';
-        hintPanel.classList.remove('hidden');
-
-        // Update timer with new remaining time
+        document.getElementById('hint-panel').classList.remove('hidden');
         if (data.remaining_seconds !== undefined) {
             remainingSeconds = data.remaining_seconds;
             updateTimerDisplay();
         }
-
-        // Flash timer red to show penalty
         const timerEl = document.getElementById('timer');
-        timerEl.classList.add('text-red-400', 'animate-shake');
-        setTimeout(() => {
-            timerEl.classList.remove('animate-shake');
-        }, 500);
-
-    } catch (err) {
-        console.error('Hint error:', err);
-    } finally {
-        hintBtn.disabled = false;
-    }
+        timerEl.classList.add('urgent');
+        setTimeout(() => { if (remainingSeconds > 60) timerEl.classList.remove('urgent'); }, 1000);
+    } catch (err) { console.error('Hint error:', err); }
+    finally { btn.disabled = false; }
 }
 
 // ---------------------------------------------------------------------------
 // Image Upload
 // ---------------------------------------------------------------------------
 function toggleImageUpload() {
-    const panel = document.getElementById('image-upload-panel');
-    panel.classList.toggle('hidden');
+    document.getElementById('image-upload-panel').classList.toggle('hidden');
 }
 
 async function uploadClue() {
-    const fileInput = document.getElementById('image-input');
-    const file = fileInput.files[0];
+    const file = document.getElementById('image-input').files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('image', file);
-
-    const uploadBtn = document.querySelector('#image-upload-panel button');
-    uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Analyzing...';
-
+    const btn = document.querySelector('#image-upload-panel button');
+    btn.disabled = true; btn.textContent = 'Analyzing...';
     try {
-        const resp = await fetch('/upload-clue', {
-            method: 'POST',
-            body: formData,
-        });
+        const resp = await fetch('/upload-clue', { method: 'POST', body: formData });
         const data = await resp.json();
-
         if (data.success && data.puzzle) {
-            // Update puzzle display with image-based puzzle
             document.getElementById('puzzle-question').textContent = data.puzzle.question;
             document.getElementById('puzzle-type').textContent = 'visual';
-
-            // Update narrative
-            if (data.narrative_log && data.narrative_log.length > 0) {
+            if (data.narrative_log?.length) {
                 document.getElementById('narrative-text').textContent = data.narrative_log[data.narrative_log.length - 1];
             }
-
-            // Hide upload panel
             document.getElementById('image-upload-panel').classList.add('hidden');
-            // Hide hint panel since puzzle changed
             document.getElementById('hint-panel').classList.add('hidden');
-
-            // Clear answer input
             document.getElementById('answer-input').value = '';
             document.getElementById('answer-input').focus();
-
-            // Animate puzzle card
             animatePuzzleCard();
-        } else {
-            alert(data.error || 'Failed to analyze image');
-        }
-    } catch (err) {
-        alert('Upload failed. Please try again.');
-    } finally {
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = 'Analyze';
-    }
+        } else { alert(data.error || 'Failed to analyze image'); }
+    } catch (err) { alert('Upload failed. Please try again.'); }
+    finally { btn.disabled = false; btn.textContent = 'Analyze'; }
 }
 
 // ---------------------------------------------------------------------------
-// UI Transitions & Effects
+// UI Transitions
 // ---------------------------------------------------------------------------
 function transitionToPuzzle(data) {
     const card = document.getElementById('puzzle-card');
     card.style.opacity = '0';
-    card.style.transform = 'translateY(20px)';
+    card.style.transform = 'translateY(20px) scale(0.98)';
 
     setTimeout(() => {
-        // Update puzzle content
         currentPuzzleNumber = data.puzzle_number || (currentPuzzleNumber + 1);
         document.getElementById('puzzle-question').textContent = data.puzzle.question;
         document.getElementById('puzzle-type').textContent = data.puzzle.puzzle_type || data.puzzle.type || 'riddle';
         document.getElementById('puzzle-number-badge').textContent = currentPuzzleNumber;
         document.getElementById('puzzle-num').textContent = currentPuzzleNumber;
-
-        // Update progress
         const pct = Math.round(((currentPuzzleNumber - 1) / TOTAL_PUZZLES) * 100);
         document.getElementById('progress-bar').style.width = pct + '%';
         document.getElementById('progress-pct').textContent = pct + '%';
-
-        // Update narrative
-        if (data.narrative_log && data.narrative_log.length > 0) {
+        if (data.narrative_log?.length) {
             document.getElementById('narrative-text').textContent = data.narrative_log[data.narrative_log.length - 1];
         }
-
-        // Update remaining time
         if (data.remaining_seconds !== undefined) {
             remainingSeconds = data.remaining_seconds;
             updateTimerDisplay();
         }
-
-        // Clear inputs and panels
         document.getElementById('answer-input').value = '';
         document.getElementById('feedback').classList.add('hidden');
         document.getElementById('hint-panel').classList.add('hidden');
         document.getElementById('image-upload-panel').classList.add('hidden');
 
-        // Animate in
-        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
         card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-
+        card.style.transform = 'translateY(0) scale(1)';
         document.getElementById('answer-input').focus();
-    }, 300);
+    }, 350);
 }
 
-function showFeedback(isCorrect, message) {
+function showFeedback(correct, message) {
     const fb = document.getElementById('feedback');
-    fb.classList.remove('hidden', 'bg-green-900/50', 'border-green-700', 'text-green-300',
-                         'bg-red-900/50', 'border-red-700', 'text-red-300');
-
-    if (isCorrect) {
-        fb.classList.add('bg-green-900/50', 'border', 'border-green-700', 'text-green-300');
-        fb.textContent = '✅ ' + message;
-    } else {
-        fb.classList.add('bg-red-900/50', 'border', 'border-red-700', 'text-red-300');
-        fb.textContent = '❌ ' + message;
-    }
+    fb.className = 'mt-5 p-4 rounded-xl text-sm border animate-fade-in ' + (correct ? 'feedback-correct' : 'feedback-wrong');
+    fb.textContent = (correct ? '✓ ' : '✗ ') + message;
     fb.classList.remove('hidden');
 }
 
 function showScorePopup(score) {
     const popup = document.createElement('div');
-    popup.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-black z-50 pointer-events-none';
-    popup.style.color = 'var(--accent-color)';
+    popup.className = 'score-popup';
     popup.textContent = '+' + score;
-    popup.style.transition = 'all 1s ease-out';
     document.body.appendChild(popup);
-
-    requestAnimationFrame(() => {
-        popup.style.opacity = '0';
-        popup.style.transform = 'translate(-50%, -150%)';
-    });
-
-    setTimeout(() => popup.remove(), 1200);
+    setTimeout(() => popup.remove(), 1300);
 }
 
 function shakeElement(el) {
@@ -306,56 +199,52 @@ function shakeElement(el) {
 function animatePuzzleCard() {
     const card = document.getElementById('puzzle-card');
     card.style.transition = 'none';
-    card.style.transform = 'scale(0.95)';
+    card.style.transform = 'scale(0.97)';
     card.style.opacity = '0.5';
     setTimeout(() => {
-        card.style.transition = 'all 0.4s ease-out';
+        card.style.transition = 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
         card.style.transform = 'scale(1)';
         card.style.opacity = '1';
     }, 50);
 }
 
 // ---------------------------------------------------------------------------
-// Background Particles
+// Particles
 // ---------------------------------------------------------------------------
 function initParticles() {
     const container = document.getElementById('particles');
     if (!container) return;
-
-    const count = 30;
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 20; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
         p.style.left = Math.random() * 100 + '%';
-        p.style.top = Math.random() * 100 + '%';
-        p.style.animationDelay = Math.random() * 6 + 's';
-        p.style.animationDuration = (4 + Math.random() * 4) + 's';
-        p.style.width = (2 + Math.random() * 3) + 'px';
-        p.style.height = p.style.width;
+        p.style.top = (100 + Math.random() * 20) + '%';
+        p.style.animationDelay = Math.random() * 8 + 's';
+        p.style.animationDuration = (8 + Math.random() * 8) + 's';
+        const size = (1 + Math.random() * 2) + 'px';
+        p.style.width = size;
+        p.style.height = size;
         container.appendChild(p);
     }
 }
 
 // ---------------------------------------------------------------------------
-// Periodic Time Check (backup for server-side time tracking)
+// Time sync
 // ---------------------------------------------------------------------------
 function startTimeCheck() {
     setInterval(async () => {
         try {
             const resp = await fetch('/time-check', { method: 'POST' });
             const data = await resp.json();
-            if (data.time_up) {
-                window.location.href = data.redirect;
-            } else if (data.remaining_seconds !== undefined) {
-                // Sync client timer with server
-                const diff = Math.abs(remainingSeconds - data.remaining_seconds);
-                if (diff > 5) {
+            if (data.time_up) window.location.href = data.redirect;
+            else if (data.remaining_seconds !== undefined) {
+                if (Math.abs(remainingSeconds - data.remaining_seconds) > 5) {
                     remainingSeconds = data.remaining_seconds;
                     updateTimerDisplay();
                 }
             }
-        } catch (e) { /* ignore */ }
-    }, 30000); // Every 30 seconds
+        } catch (e) {}
+    }, 30000);
 }
 
 // ---------------------------------------------------------------------------
@@ -365,8 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initParticles();
     startTimer();
     startTimeCheck();
-
-    // Focus answer input
     const input = document.getElementById('answer-input');
     if (input) input.focus();
 });

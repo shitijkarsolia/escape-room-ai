@@ -6,9 +6,11 @@ from typing import Dict, List, Optional
 # Theme descriptions used across prompts
 # ---------------------------------------------------------------------------
 THEME_DESCRIPTIONS = {
+    # ---- Classic Escape Rooms ----
     "temple": {
         "name": "Ancient Temple",
         "tagline": "Lost ruins hide secrets older than time itself.",
+        "category": "classic",
         "setting": (
             "You are trapped inside an ancient temple deep in a forgotten jungle. "
             "Crumbling stone walls are covered in mysterious glyphs. Torchlight flickers "
@@ -18,10 +20,13 @@ THEME_DESCRIPTIONS = {
         ),
         "icon": "🏛️",
         "accent": "amber",
+        "gradient_from": "#92400e",
+        "gradient_to": "#d97706",
     },
     "space": {
         "name": "Space Station",
         "tagline": "Oxygen is running out. Solve fast or drift forever.",
+        "category": "classic",
         "setting": (
             "You are stranded on an abandoned orbital space station. Emergency lights "
             "pulse red. Holographic displays glitch with fragmented data. The airlock "
@@ -31,10 +36,13 @@ THEME_DESCRIPTIONS = {
         ),
         "icon": "🚀",
         "accent": "cyan",
+        "gradient_from": "#164e63",
+        "gradient_to": "#06b6d4",
     },
     "haunted": {
         "name": "Haunted Mansion",
         "tagline": "The doors locked behind you. The ghosts know you're here.",
+        "category": "classic",
         "setting": (
             "You are trapped inside a Victorian mansion that hasn't seen sunlight in decades. "
             "Portraits watch you with moving eyes. Floorboards creak with phantom footsteps. "
@@ -43,6 +51,61 @@ THEME_DESCRIPTIONS = {
         ),
         "icon": "👻",
         "accent": "purple",
+        "gradient_from": "#581c87",
+        "gradient_to": "#a855f7",
+    },
+    # ---- TV Shows & Movies ----
+    "theoffice": {
+        "name": "The Office",
+        "tagline": "You're locked in Dunder Mifflin. Michael has the only key.",
+        "category": "tvshow",
+        "setting": (
+            "You are trapped inside the Dunder Mifflin Scranton branch after hours. "
+            "Michael Scott accidentally locked everyone out and lost the key somewhere in the office. "
+            "Dwight is 'helping' by giving cryptic beet-farming metaphors. Jim left a trail of pranks "
+            "as clues. You must solve puzzles hidden in Accounting spreadsheets, Kevin's famous chili recipe, "
+            "the Party Planning Committee archives, and Michael's 'World's Best Boss' mug collection. "
+            "Every puzzle references iconic Office moments, characters, and running jokes."
+        ),
+        "icon": "📎",
+        "accent": "blue",
+        "gradient_from": "#1e3a5f",
+        "gradient_to": "#3b82f6",
+    },
+    "friends": {
+        "name": "Friends",
+        "tagline": "Could this BE any harder? The one where you're trapped in Central Perk.",
+        "category": "tvshow",
+        "setting": (
+            "You are locked inside Central Perk after closing time. The orange couch holds a hidden message. "
+            "Monica's apartment across the street has clues visible through the window. "
+            "You must solve puzzles involving Ross's dinosaur trivia, Chandler's sarcastic riddles, "
+            "Joey's acting headshots hiding coded messages, Phoebe's song lyrics with hidden meanings, "
+            "Rachel's fashion magazine clue trails, and Monica's obsessively organized pantry labels. "
+            "Every puzzle is a love letter to the show's most iconic moments and catchphrases."
+        ),
+        "icon": "☕",
+        "accent": "yellow",
+        "gradient_from": "#713f12",
+        "gradient_to": "#eab308",
+    },
+    "got": {
+        "name": "Game of Thrones",
+        "tagline": "When you play the game of puzzles, you win or you die.",
+        "category": "tvshow",
+        "setting": (
+            "You are imprisoned in the Red Keep's dungeons beneath King's Landing. "
+            "Tyrion Lannister has smuggled you a series of encoded messages to help you escape "
+            "before Cersei's trial begins at dawn. The puzzles involve deciphering raven scrolls "
+            "from the Citadel, solving riddles from the Three-Eyed Raven's visions, "
+            "cracking codes based on the great Houses' sigils and mottos, "
+            "and piecing together a map through the secret tunnels Varys's little birds used. "
+            "Every puzzle draws from the lore, battles, betrayals, and prophecies of Westeros."
+        ),
+        "icon": "⚔️",
+        "accent": "red",
+        "gradient_from": "#7f1d1d",
+        "gradient_to": "#dc2626",
     },
 }
 
@@ -59,6 +122,7 @@ RULES:
 - The puzzle must fit the theme and setting naturally.
 - Vary puzzle types: riddles, ciphers, logic puzzles, pattern recognition, word puzzles.
 - The narrative_text should advance the room's story and flow naturally from the previous puzzle context.
+- If the theme is based on a TV show or movie, incorporate specific characters, quotes, plot points, and references that fans will recognize and enjoy. Make puzzles that reward knowledge of the show while still being solvable by non-fans with logic.
 
 You MUST respond with valid JSON in this exact format:
 {
@@ -93,6 +157,14 @@ def puzzle_generation_prompt(
     if narrative_so_far:
         narrative_ctx = f"\nNarrative so far:\n{narrative_so_far}"
 
+    extra = ""
+    if theme_data.get("category") == "tvshow":
+        extra = (
+            "\nIMPORTANT: This is a TV show themed room. Incorporate specific character names, "
+            "famous quotes, iconic scenes, and plot references. The puzzle should feel like a "
+            "tribute to the show that fans will love. Use in-universe language and references."
+        )
+
     return f"""Generate puzzle {puzzle_number} of {total_puzzles} for the escape room.
 
 Theme: {theme_data['name']}
@@ -100,7 +172,7 @@ Setting: {theme_data['setting']}
 Target difficulty: {difficulty}/5
 {prev_context}
 {narrative_ctx}
-
+{extra}
 {"This is the FINAL puzzle — make it the most challenging and climactic!" if puzzle_number == total_puzzles else ""}
 {"This is the FIRST puzzle — set the scene dramatically in the narrative_text." if puzzle_number == 1 else ""}"""
 
