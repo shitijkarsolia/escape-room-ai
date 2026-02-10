@@ -1,5 +1,0 @@
-flask
-google-genai
-Pillow
-gunicorn
-python-dotenv

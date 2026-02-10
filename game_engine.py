@@ -7,7 +7,7 @@ from difflib import SequenceMatcher
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
 
-from gemini_client import generate_json, validate_answer, analyze_image
+from groq_client import generate_json, validate_answer, analyze_image
 from prompts import (
     PUZZLE_GENERATION_SYSTEM,
     ANSWER_VALIDATION_SYSTEM,
@@ -119,7 +119,7 @@ class GameEngine:
         return state
 
     def generate_puzzle(self, state: GameState) -> GameState:
-        """Generate the next puzzle using Gemini 3."""
+        """Generate the next puzzle using Groq."""
         previous_puzzles = []
         for p_dict in state.puzzles:
             p = PuzzleState.from_dict(p_dict)
@@ -192,7 +192,7 @@ class GameEngine:
         if ratio <= 0.35:
             return False
 
-        # Ambiguous — let Gemini decide
+        # Ambiguous — let the LLM decide
         return None
 
     def check_answer(self, state: GameState, player_answer: str) -> tuple[GameState, dict]:
@@ -217,7 +217,7 @@ class GameEngine:
             is_correct = False
             feedback = "Not quite. Try again!"
         else:
-            # Ambiguous — use Gemini for flexible validation
+            # Ambiguous — use Groq for flexible validation
             try:
                 prompt = answer_validation_prompt(
                     question=puzzle.question,
@@ -228,7 +228,7 @@ class GameEngine:
                 is_correct = validation.get("correct", False)
                 feedback = validation.get("feedback", "")
             except Exception:
-                # If Gemini fails, fall back to stricter local match
+                # If Groq fails, fall back to stricter local match
                 ratio = SequenceMatcher(
                     None,
                     self._normalize(puzzle.answer),
@@ -291,7 +291,7 @@ class GameEngine:
         if not puzzle:
             return state, {"hint": "No active puzzle.", "encouragement": ""}
 
-        # Use pre-generated hints first, then ask Gemini for custom ones
+        # Use pre-generated hints first, then ask Groq for custom ones
         if puzzle.hints_used < len(puzzle.hints):
             hint_text = puzzle.hints[puzzle.hints_used]
             encouragement = "You've got this! Keep thinking..."

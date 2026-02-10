@@ -233,6 +233,25 @@ def start_custom_game():
         return jsonify({"error": f"AI is busy — please try again. ({type(e).__name__})"}), 503
 
 
+@app.route("/reveal", methods=["POST"])
+def reveal_answer():
+    """Reveal the answer for the current puzzle without skipping or scoring."""
+    state = get_game_state()
+    if not state or state.status != "playing":
+        return jsonify({"error": "No active game"}), 400
+
+    if state.is_time_up:
+        state.status = "defeat"
+        save_game_state(state)
+        return jsonify({"time_up": True, "redirect": url_for("result")})
+
+    puzzle = state.current_puzzle
+    if not puzzle:
+        return jsonify({"error": "No active puzzle"}), 400
+
+    return jsonify({"answer": puzzle.answer})
+
+
 @app.route("/skip", methods=["POST"])
 def skip_puzzle():
     """Skip the current puzzle (0 points, answer revealed)."""

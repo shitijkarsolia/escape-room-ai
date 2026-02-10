@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-# Install Python 3.11 and pip
-yum update -y
-yum install -y python3.11 python3.11-pip
+# Install uv (manages Python + packages)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
 
 # Create app directory
 mkdir -p /opt/escape-room-ai

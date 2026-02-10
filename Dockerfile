@@ -1,12 +1,14 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
 
 EXPOSE 80
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:80", "--timeout", "120", "app:app"]
+CMD ["uv", "run", "gunicorn", "-w", "2", "-b", "0.0.0.0:80", "--timeout", "120", "app:app"]

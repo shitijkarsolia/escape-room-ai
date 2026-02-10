@@ -9,7 +9,7 @@
     <div class="text-center mb-16 animate-slide-up">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-gray-400 mb-6 backdrop-blur-sm">
             <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Powered by Gemini 3
+            Powered by Groq
         </div>
         <h1 class="font-display text-6xl md:text-7xl font-bold tracking-tight mb-4">
             <span class="bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
@@ -77,7 +77,7 @@
                         <h3 class="font-display text-lg font-semibold text-white">Upload an Image</h3>
                     </div>
                     <p class="text-gray-500 text-sm leading-relaxed mb-4">
-                        Upload any photo and Gemini 3 will analyze it to create a full escape room with 5 unique visual puzzles based on what it sees. Works with anything — a room, a drawing, a meme, a screenshot.
+                        Upload any photo and AI will analyze it to create a full escape room with 5 unique visual puzzles based on what it sees. Works with anything — a room, a drawing, a meme, a screenshot.
                     </p>
                     <div class="flex gap-3 items-center">
                         <input type="file" id="custom-image-input" accept="image/*"
@@ -127,13 +127,13 @@
             <div class="w-14 h-14 rounded-full border-2 border-white/10 border-t-white/60 animate-spin"></div>
         </div>
         <p class="text-gray-300 text-lg font-display font-medium" id="loading-text">Generating your escape room...</p>
-        <p class="text-gray-600 text-sm mt-2">Gemini 3 is crafting unique puzzles</p>
+        <p class="text-gray-600 text-sm mt-2">Groq is crafting unique puzzles at lightning speed</p>
     </div>
 
     <!-- Footer -->
     <div class="text-center text-gray-600 text-xs mt-8 space-y-1">
         <p>5 puzzles &middot; 15 minute timer &middot; Hints cost 60 seconds</p>
-        <p class="text-gray-700">Built with Gemini 3 for the Google DeepMind Hackathon</p>
+        <p class="text-gray-700">Powered by Groq LPU Inference Engine</p>
     </div>
 </div>
 
@@ -228,7 +228,7 @@ function showLoading() {
     document.getElementById('loading').classList.remove('hidden');
     const messages = [
         'Generating your escape room...',
-        'Crafting puzzles with Gemini 3...',
+        'Crafting puzzles with Groq...',
         'Building the first challenge...',
         'Almost ready...'
     ];

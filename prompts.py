@@ -1,4 +1,4 @@
-"""System prompts for Gemini 3 interactions."""
+"""System prompts for Groq LLM interactions."""
 
 from typing import Dict, List, Optional
 
@@ -139,7 +139,7 @@ THEME_DESCRIPTIONS = {
     # ---- Custom (image-based) ----
     "custom": {
         "name": "Your Image",
-        "tagline": "Upload a photo and Gemini 3 creates puzzles from it.",
+        "tagline": "Upload a photo and AI creates puzzles from it.",
         "category": "custom",
         "setting": (
             "The player has uploaded their own image. Create puzzles that creatively "
@@ -165,21 +165,23 @@ CRITICAL RULES:
 - The answer should be a single word or short phrase (1-3 words max).
 - Provide exactly 3 hints, each progressively more helpful.
 - The puzzle must fit the theme and setting naturally.
+- NEVER create cipher/decoding puzzles or math/calculation puzzles. These are NOT fun in a text-based game.
 - IMPORTANT: Vary puzzle types across these categories — do NOT make them all word/riddle puzzles:
   * "trivia" — factual question about the show/theme (e.g. "What is the name of Dwight's beet farm?")
-  * "math" — a quick number puzzle or calculation themed to the show
-  * "logic" — a short deduction puzzle (e.g. "If A then B, if B then C, what is C?")
-  * "cipher" — a coded message to decode (keep the encoded text short)
-  * "riddle" — a classic riddle or lateral thinking question
-  * "pattern" — spot the pattern in a short sequence
+  * "quote" — complete or identify a famous quote (e.g. "Who said: 'That's what she said'?")
+  * "logic" — a short deduction puzzle using show lore (e.g. "Only one character has been to all 3 locations. Who?")
+  * "riddle" — a classic riddle or lateral thinking question themed to the show
+  * "whoisit" — describe a character via clues and the player guesses who (e.g. "I love beets, bears, and Battlestar Galactica")
+  * "pattern" — spot the odd one out or what connects a list (e.g. "What do these 4 things have in common?")
   * "visual" — describe something to identify (e.g. "I'm yellow, curved, and Kevin dropped me. What am I?")
 - The narrative_text should be ONE short sentence advancing the story.
 - If the theme is a TV show, use character names, quotes, and references fans will love.
+- Puzzles should be FUN and feel like a fan quiz, not homework.
 
 You MUST respond with valid JSON in this exact format:
 {
     "question": "Short puzzle text (1-3 sentences max)",
-    "type": "trivia|math|logic|cipher|riddle|pattern|visual",
+    "type": "trivia|quote|logic|riddle|whoisit|pattern|visual",
     "answer": "the answer (lowercase)",
     "hints": ["Hint 1 (subtle)", "Hint 2 (moderate)", "Hint 3 (very helpful)"],
     "narrative_text": "One short sentence setting the scene",
@@ -225,14 +227,14 @@ def puzzle_generation_prompt(
             "Make it significantly harder than usual (difficulty 5/5 regardless of target). "
             "Use an obscure or deep-cut reference from the show that only true fans would know. "
             "The narrative_text should hint that this is a 'special hidden challenge' or 'secret bonus room'. "
-            "Make the puzzle type a cipher or complex logic puzzle."
+            "Make it a deep-cut trivia or 'who is it' puzzle that only true fans would get."
         )
 
     # Determine which types have been used already to enforce variety
     used_types = []
     if previous_puzzles:
         used_types = [p["type"] for p in previous_puzzles]
-    all_types = ["trivia", "math", "logic", "cipher", "riddle", "pattern", "visual"]
+    all_types = ["trivia", "quote", "logic", "riddle", "whoisit", "pattern", "visual"]
     unused = [t for t in all_types if t not in used_types]
     type_hint = ""
     if unused:

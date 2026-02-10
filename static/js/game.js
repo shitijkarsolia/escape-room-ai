@@ -475,6 +475,30 @@ async function requestHint() {
 }
 
 // ---------------------------------------------------------------------------
+// Reveal Answer
+// ---------------------------------------------------------------------------
+async function revealAnswer() {
+    const btn = document.getElementById('reveal-btn');
+    const panel = document.getElementById('reveal-panel');
+
+    // Toggle off if already visible
+    if (!panel.classList.contains('hidden')) {
+        panel.classList.add('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        const resp = await fetch('/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const data = await resp.json();
+        if (data.time_up) { window.location.href = data.redirect; return; }
+        document.getElementById('reveal-answer-text').textContent = data.answer;
+        panel.classList.remove('hidden');
+    } catch (err) { console.error('Reveal error:', err); }
+    finally { btn.disabled = false; }
+}
+
+// ---------------------------------------------------------------------------
 // Skip Puzzle
 // ---------------------------------------------------------------------------
 async function skipPuzzle() {
@@ -540,6 +564,8 @@ function transitionToPuzzle(data) {
         document.getElementById('hint-panel').classList.add('hidden');
         const skipPanel = document.getElementById('skip-panel');
         if (skipPanel) skipPanel.classList.add('hidden');
+        const revealPanel = document.getElementById('reveal-panel');
+        if (revealPanel) revealPanel.classList.add('hidden');
         const imgPanel = document.getElementById('image-upload-panel');
         if (imgPanel) imgPanel.classList.add('hidden');
 
