@@ -166,8 +166,9 @@ def submit_answer():
             state = engine.generate_puzzle(state)
         except Exception as e:
             app.logger.error("Puzzle generation failed: %s", e)
-            return jsonify({**result, "error_generating": True,
-                            "feedback": "Correct! But the AI needs a moment to generate the next puzzle. Refresh the page."})
+            # Save state so /next-puzzle can retry
+            save_game_state(state)
+            return jsonify({**result, "needs_retry": True})
         save_game_state(state)
         puzzle = state.current_puzzle
         return jsonify({
@@ -270,6 +271,35 @@ def skip_puzzle():
 
     save_game_state(state)
     return jsonify(result)
+
+
+@app.route("/next-puzzle", methods=["POST"])
+def next_puzzle():
+    """Retry generating the next puzzle (called when initial generation failed)."""
+    state = get_game_state()
+    if not state or state.status != "playing":
+        return jsonify({"error": "No active game"}), 400
+
+    if state.is_time_up:
+        state.status = "defeat"
+        save_game_state(state)
+        return jsonify({"time_up": True, "redirect": url_for("result")})
+
+    try:
+        state = engine.generate_puzzle(state)
+    except Exception as e:
+        app.logger.error("Retry puzzle generation failed: %s", e)
+        return jsonify({"needs_retry": True})
+
+    save_game_state(state)
+    puzzle = state.current_puzzle
+    return jsonify({
+        "success": True,
+        "puzzle": puzzle.to_dict() if puzzle else None,
+        "puzzle_number": state.current_puzzle_index + 1,
+        "remaining_seconds": state.remaining_seconds,
+        "narrative_log": state.narrative_log,
+    })
 
 
 @app.route("/time-check", methods=["POST"])

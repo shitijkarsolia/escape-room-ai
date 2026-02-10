@@ -277,6 +277,95 @@ function showVictoryCelebration() {
 }
 
 // ---------------------------------------------------------------------------
+// Loading Overlay (between puzzles)
+// ---------------------------------------------------------------------------
+const LOADING_MESSAGES = [
+    'Generating next puzzle...',
+    'The AI is thinking...',
+    'Crafting your challenge...',
+    'Almost there...',
+    'Building something clever...',
+];
+
+function showPuzzleLoading() {
+    let overlay = document.getElementById('puzzle-loading');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'puzzle-loading';
+        overlay.innerHTML = `
+            <div class="puzzle-loading-content">
+                <div class="puzzle-loading-spinner"></div>
+                <p class="puzzle-loading-text">${LOADING_MESSAGES[0]}</p>
+                <div class="puzzle-loading-dots"><span>.</span><span>.</span><span>.</span></div>
+            </div>`;
+        document.body.appendChild(overlay);
+    }
+    overlay.classList.remove('hidden');
+    // Cycle messages
+    let idx = 0;
+    overlay._msgInterval = setInterval(() => {
+        idx = (idx + 1) % LOADING_MESSAGES.length;
+        const txt = overlay.querySelector('.puzzle-loading-text');
+        if (txt) txt.textContent = LOADING_MESSAGES[idx];
+    }, 2000);
+}
+
+function hidePuzzleLoading() {
+    const overlay = document.getElementById('puzzle-loading');
+    if (overlay) {
+        clearInterval(overlay._msgInterval);
+        overlay.classList.add('hidden');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Retry puzzle generation
+// ---------------------------------------------------------------------------
+async function retryNextPuzzle(attempts) {
+    const maxAttempts = attempts || 3;
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            const resp = await fetch('/next-puzzle', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const data = await resp.json();
+            if (data.time_up) { window.location.href = data.redirect; return; }
+            if (data.success && data.puzzle) {
+                hidePuzzleLoading();
+                transitionToPuzzle(data);
+                return;
+            }
+            // Still failing — wait and retry
+            const txt = document.querySelector('.puzzle-loading-text');
+            if (txt) txt.textContent = `Retrying... (${i + 2}/${maxAttempts})`;
+            await new Promise(r => setTimeout(r, 3000));
+        } catch (e) {
+            await new Promise(r => setTimeout(r, 2000));
+        }
+    }
+    // All retries failed — show manual retry button
+    hidePuzzleLoading();
+    showRetryButton();
+}
+
+function showRetryButton() {
+    const fb = document.getElementById('feedback');
+    fb.className = 'mt-5 p-5 rounded-xl text-sm border animate-fade-in feedback-correct';
+    fb.innerHTML = `
+        <div class="flex items-center justify-between">
+            <span>✓ Correct! AI is warming up...</span>
+            <button onclick="manualRetry()" class="px-4 py-2 rounded-lg font-display font-semibold text-sm text-[#09090b] hover:brightness-110 active:scale-95 transition-all" style="background: var(--accent);">
+                Next Puzzle →
+            </button>
+        </div>`;
+    fb.classList.remove('hidden');
+}
+
+async function manualRetry() {
+    showPuzzleLoading();
+    document.getElementById('feedback').classList.add('hidden');
+    await retryNextPuzzle(3);
+}
+
+// ---------------------------------------------------------------------------
 // Answer Submission
 // ---------------------------------------------------------------------------
 async function submitAnswer() {
@@ -319,7 +408,16 @@ async function submitAnswer() {
             if (data.is_easter_egg) showEasterEggBonus();
             currentScore += (data.score || 0);
             document.getElementById('score').textContent = currentScore;
-            setTimeout(() => { if (data.puzzle) transitionToPuzzle(data); }, 1800);
+
+            if (data.needs_retry) {
+                // Puzzle generation failed — show loading and auto-retry
+                setTimeout(() => {
+                    showPuzzleLoading();
+                    retryNextPuzzle(4);
+                }, 1500);
+            } else if (data.puzzle) {
+                setTimeout(() => transitionToPuzzle(data), 1800);
+            }
         } else {
             showFeedback(false, data.feedback || 'Not quite. Try again!');
             showCharacterReaction(false);

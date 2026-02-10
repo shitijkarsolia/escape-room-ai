@@ -295,4 +295,51 @@ button, a, input { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
+/* ---------------------------------------------------------------------------
+   Puzzle Loading Overlay
+   --------------------------------------------------------------------------- */
+#puzzle-loading {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeInOverlay 0.3s ease-out;
+}
+#puzzle-loading.hidden { display: none; }
+
+@keyframes fadeInOverlay {
+    0% { opacity: 0; } 100% { opacity: 1; }
+}
+
+.puzzle-loading-content {
+    text-align: center;
+}
+
+.puzzle-loading-spinner {
+    width: 56px; height: 56px; margin: 0 auto 20px;
+    border: 3px solid rgba(255,255,255,0.08);
+    border-top-color: var(--accent, #3b82f6);
+    border-radius: 50%;
+    animation: puzzleSpin 0.8s linear infinite;
+}
+@keyframes puzzleSpin { to { transform: rotate(360deg); } }
+
+.puzzle-loading-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem; font-weight: 500;
+    color: #e5e7eb; margin-bottom: 8px;
+}
+
+.puzzle-loading-dots span {
+    font-size: 1.5rem; color: var(--accent, #3b82f6);
+    animation: dotBounce 1.4s infinite ease-in-out both;
+    display: inline-block;
+}
+.puzzle-loading-dots span:nth-child(1) { animation-delay: 0s; }
+.puzzle-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.puzzle-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+    40% { transform: translateY(-8px); opacity: 1; }
+}
+
 @media (max-width: 640px) { #puzzle-card { padding: 1.5rem; } }
