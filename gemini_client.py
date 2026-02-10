@@ -11,9 +11,12 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-# Primary model, with fallback
-PRIMARY_MODEL = "gemini-3-flash-preview"
-FALLBACK_MODEL = "gemini-2.5-flash"
+# Model cascade — try each in order until one works
+MODEL_CASCADE = [
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+]
 
 MAX_RETRIES = 2
 RETRY_BASE_DELAY = 1  # seconds
@@ -27,10 +30,18 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def _call_with_retry(client, model, contents, config):
-    """Call generate_content with retry logic and model fallback."""
-    models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
+def _call_with_retry(client, preferred_model, contents, config):
+    """Call generate_content with retry logic and model cascade fallback.
 
+    Tries the preferred_model first, then falls through the full cascade.
+    """
+    # Build ordered list: preferred first, then the rest
+    models_to_try = [preferred_model]
+    for m in MODEL_CASCADE:
+        if m not in models_to_try:
+            models_to_try.append(m)
+
+    last_error = None
     for model_name in models_to_try:
         for attempt in range(MAX_RETRIES):
             try:
@@ -41,6 +52,7 @@ def _call_with_retry(client, model, contents, config):
                 )
                 return response
             except genai_errors.ServerError as e:
+                last_error = e
                 delay = RETRY_BASE_DELAY * (2 ** attempt)
                 logger.warning(
                     "Model %s attempt %d failed (503): %s. Retrying in %ds...",
@@ -49,6 +61,7 @@ def _call_with_retry(client, model, contents, config):
                 time.sleep(delay)
             except genai_errors.ClientError as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    last_error = e
                     delay = RETRY_BASE_DELAY * (2 ** attempt)
                     logger.warning(
                         "Rate limited on %s attempt %d. Retrying in %ds...",
@@ -58,92 +71,54 @@ def _call_with_retry(client, model, contents, config):
                 else:
                     raise
 
-        logger.warning("All retries exhausted for model %s, trying fallback...", model_name)
+        logger.warning("All retries exhausted for %s, trying next model...", model_name)
 
-    raise RuntimeError("All models and retries exhausted. Please try again later.")
+    raise RuntimeError(f"All models exhausted. Last error: {last_error}")
 
 
 def generate_json(system_prompt: str, user_prompt: str, temperature: float = 0.9) -> dict:
-    """Generate structured JSON from Gemini.
-
-    Args:
-        system_prompt: System instruction for the model.
-        user_prompt: The user-facing prompt.
-        temperature: Sampling temperature (higher = more creative).
-
-    Returns:
-        Parsed JSON dict from the model response.
-    """
+    """Generate structured JSON from Gemini."""
     client = _get_client()
     config = {
         "system_instruction": system_prompt,
         "response_mime_type": "application/json",
         "temperature": temperature,
     }
-    response = _call_with_retry(client, PRIMARY_MODEL, user_prompt, config)
+    response = _call_with_retry(client, MODEL_CASCADE[0], user_prompt, config)
     return json.loads(response.text)
 
 
 def generate_text(system_prompt: str, user_prompt: str, temperature: float = 0.9) -> str:
-    """Generate plain text from Gemini.
-
-    Args:
-        system_prompt: System instruction for the model.
-        user_prompt: The user-facing prompt.
-        temperature: Sampling temperature.
-
-    Returns:
-        Text string from the model response.
-    """
+    """Generate plain text from Gemini."""
     client = _get_client()
     config = {
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
-    response = _call_with_retry(client, PRIMARY_MODEL, user_prompt, config)
+    response = _call_with_retry(client, MODEL_CASCADE[0], user_prompt, config)
     return response.text
 
 
 def analyze_image(system_prompt: str, user_prompt: str, image: Image.Image, temperature: float = 0.7) -> dict:
-    """Analyze an image with Gemini multimodal and return structured JSON.
-
-    Args:
-        system_prompt: System instruction for the model.
-        user_prompt: The user-facing prompt.
-        image: PIL Image to analyze.
-        temperature: Sampling temperature.
-
-    Returns:
-        Parsed JSON dict from the model response.
-    """
+    """Analyze an image with Gemini multimodal and return structured JSON."""
     client = _get_client()
     config = {
         "system_instruction": system_prompt,
         "response_mime_type": "application/json",
         "temperature": temperature,
     }
-    response = _call_with_retry(client, PRIMARY_MODEL, [user_prompt, image], config)
+    response = _call_with_retry(client, MODEL_CASCADE[0], [user_prompt, image], config)
     return json.loads(response.text)
 
 
 def validate_answer(system_prompt: str, user_prompt: str) -> dict:
-    """Validate a player's answer using Gemini.
-
-    Uses the fallback (faster) model with low temperature for quick validation.
-
-    Args:
-        system_prompt: System instruction for validation.
-        user_prompt: Contains the puzzle, expected answer, and player's answer.
-
-    Returns:
-        Parsed JSON dict with 'correct' (bool) and 'feedback' (str).
-    """
+    """Validate a player's answer using a fast model."""
     client = _get_client()
     config = {
         "system_instruction": system_prompt,
         "response_mime_type": "application/json",
         "temperature": 0.2,
     }
-    # Use fallback model first for speed — validation is simple
-    response = _call_with_retry(client, FALLBACK_MODEL, user_prompt, config)
+    # Start with the fastest model for validation
+    response = _call_with_retry(client, "gemini-2.0-flash", user_prompt, config)
     return json.loads(response.text)
