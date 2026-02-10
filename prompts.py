@@ -134,22 +134,29 @@ THEME_DESCRIPTIONS = {
 PUZZLE_GENERATION_SYSTEM = """You are a master escape room puzzle designer and game master.
 You create clever, engaging puzzles for an interactive escape room game.
 
-RULES:
-- Each puzzle must be solvable with logic, wordplay, or lateral thinking.
-- The answer should be a single word or short phrase (1-4 words max).
+CRITICAL RULES:
+- Keep the puzzle question SHORT — 1 to 3 sentences MAX. Players should grasp it in seconds, not minutes.
+- The answer should be a single word or short phrase (1-3 words max).
 - Provide exactly 3 hints, each progressively more helpful.
 - The puzzle must fit the theme and setting naturally.
-- Vary puzzle types: riddles, ciphers, logic puzzles, pattern recognition, word puzzles.
-- The narrative_text should advance the room's story and flow naturally from the previous puzzle context.
-- If the theme is based on a TV show or movie, incorporate specific characters, quotes, plot points, and references that fans will recognize and enjoy. Make puzzles that reward knowledge of the show while still being solvable by non-fans with logic.
+- IMPORTANT: Vary puzzle types across these categories — do NOT make them all word/riddle puzzles:
+  * "trivia" — factual question about the show/theme (e.g. "What is the name of Dwight's beet farm?")
+  * "math" — a quick number puzzle or calculation themed to the show
+  * "logic" — a short deduction puzzle (e.g. "If A then B, if B then C, what is C?")
+  * "cipher" — a coded message to decode (keep the encoded text short)
+  * "riddle" — a classic riddle or lateral thinking question
+  * "pattern" — spot the pattern in a short sequence
+  * "visual" — describe something to identify (e.g. "I'm yellow, curved, and Kevin dropped me. What am I?")
+- The narrative_text should be ONE short sentence advancing the story.
+- If the theme is a TV show, use character names, quotes, and references fans will love.
 
 You MUST respond with valid JSON in this exact format:
 {
-    "question": "The full puzzle text presented to the player",
-    "type": "riddle|cipher|logic|pattern|wordplay",
+    "question": "Short puzzle text (1-3 sentences max)",
+    "type": "trivia|math|logic|cipher|riddle|pattern|visual",
     "answer": "the answer (lowercase)",
     "hints": ["Hint 1 (subtle)", "Hint 2 (moderate)", "Hint 3 (very helpful)"],
-    "narrative_text": "A 1-2 sentence narrative that sets the scene for this puzzle within the room's story",
+    "narrative_text": "One short sentence setting the scene",
     "difficulty": 1-5
 }"""
 
@@ -195,17 +202,31 @@ def puzzle_generation_prompt(
             "Make the puzzle type a cipher or complex logic puzzle."
         )
 
+    # Determine which types have been used already to enforce variety
+    used_types = []
+    if previous_puzzles:
+        used_types = [p["type"] for p in previous_puzzles]
+    all_types = ["trivia", "math", "logic", "cipher", "riddle", "pattern", "visual"]
+    unused = [t for t in all_types if t not in used_types]
+    type_hint = ""
+    if unused:
+        type_hint = f"\nSTRONGLY PREFERRED puzzle type for this one (pick from unused types): {', '.join(unused)}"
+    elif used_types:
+        type_hint = f"\nAlready used types: {', '.join(used_types)}. Pick a DIFFERENT type if possible."
+
     return f"""Generate puzzle {puzzle_number} of {total_puzzles} for the escape room.
 
 Theme: {theme_data['name']}
 Setting: {theme_data['setting']}
 Target difficulty: {difficulty}/5
+{type_hint}
 {prev_context}
 {narrative_ctx}
 {extra}
 {easter_egg_text}
-{"This is the FINAL puzzle — make it the most challenging and climactic!" if puzzle_number == total_puzzles else ""}
-{"This is the FIRST puzzle — set the scene dramatically in the narrative_text." if puzzle_number == 1 else ""}"""
+REMEMBER: Keep the question SHORT (1-3 sentences). Players read this on screen.
+{"This is the FINAL puzzle — make it the hardest!" if puzzle_number == total_puzzles else ""}
+{"This is the FIRST puzzle — set the scene in narrative_text." if puzzle_number == 1 else ""}"""
 
 
 # ---------------------------------------------------------------------------

@@ -108,13 +108,14 @@ def result():
 def start_game():
     """Start a new game with the selected theme."""
     data = request.get_json()
-    theme = data.get("theme", "temple")
+    theme = data.get("theme", "theoffice")
+    difficulty = int(data.get("difficulty", 2))
 
     if theme not in THEME_DESCRIPTIONS:
         return jsonify({"error": "Invalid theme"}), 400
 
     try:
-        state = engine.start_game(theme)
+        state = engine.start_game(theme, difficulty=difficulty)
         state = engine.generate_puzzle(state)
         save_game_state(state)
     except Exception as e:

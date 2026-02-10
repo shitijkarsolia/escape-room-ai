@@ -107,13 +107,13 @@ class GameState:
 class GameEngine:
     """Manages the escape room game logic."""
 
-    def start_game(self, theme: str) -> GameState:
+    def start_game(self, theme: str, difficulty: int = 2) -> GameState:
         """Initialize a new game session."""
         state = GameState(
             theme=theme,
             status="playing",
             start_time=time.time(),
-            difficulty_level=2,
+            difficulty_level=max(1, min(5, difficulty)),
             easter_egg_puzzle=random.randint(1, TOTAL_PUZZLES - 1),  # never first puzzle
         )
         return state

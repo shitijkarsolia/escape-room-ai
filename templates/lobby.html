@@ -84,6 +84,35 @@
         </div>
     </div>
 
+    <!-- Difficulty selector modal -->
+    <div id="difficulty-modal" class="hidden fixed inset-0 z-50 bg-[#09090b]/90 backdrop-blur-md flex items-center justify-center px-4">
+        <div class="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#09090b] p-8 animate-scale-in">
+            <h3 class="font-display text-2xl font-bold text-white mb-2 text-center">Choose Difficulty</h3>
+            <p class="text-gray-500 text-sm text-center mb-6" id="diff-theme-name"></p>
+            <div class="grid grid-cols-3 gap-3 mb-6" id="diff-buttons">
+                <button onclick="pickDifficulty(1)"
+                    class="diff-btn rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center hover:bg-white/[0.06] hover:border-white/[0.12] transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
+                    <div class="text-2xl mb-1">🟢</div>
+                    <div class="font-display font-semibold text-white text-sm">Easy</div>
+                    <div class="text-gray-600 text-[10px] mt-0.5">Casual fun</div>
+                </button>
+                <button onclick="pickDifficulty(3)"
+                    class="diff-btn rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center hover:bg-white/[0.06] hover:border-white/[0.12] transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
+                    <div class="text-2xl mb-1">🟡</div>
+                    <div class="font-display font-semibold text-white text-sm">Medium</div>
+                    <div class="text-gray-600 text-[10px] mt-0.5">Balanced</div>
+                </button>
+                <button onclick="pickDifficulty(5)"
+                    class="diff-btn rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center hover:bg-white/[0.06] hover:border-white/[0.12] transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
+                    <div class="text-2xl mb-1">🔴</div>
+                    <div class="font-display font-semibold text-white text-sm">Hard</div>
+                    <div class="text-gray-600 text-[10px] mt-0.5">True fan</div>
+                </button>
+            </div>
+            <button onclick="closeDiffModal()" class="w-full text-center text-gray-600 text-sm hover:text-gray-400 transition-colors">Cancel</button>
+        </div>
+    </div>
+
     <!-- Loading overlay -->
     <div id="loading" class="hidden fixed inset-0 z-50 bg-[#09090b]/90 backdrop-blur-md flex flex-col items-center justify-center">
         <div class="relative mb-6">
@@ -101,12 +130,35 @@
 </div>
 
 <script>
-async function selectTheme(theme) {
+let selectedTheme = null;
+
+// Theme names for the difficulty modal
+const THEME_NAMES = {
+    {% for key, theme in themes.items() %}
+    '{{ key }}': '{{ theme.name }}',
+    {% endfor %}
+};
+
+function selectTheme(theme) {
+    selectedTheme = theme;
+    document.getElementById('diff-theme-name').textContent = THEME_NAMES[theme] || theme;
+    document.getElementById('difficulty-modal').classList.remove('hidden');
+}
+
+function closeDiffModal() {
+    document.getElementById('difficulty-modal').classList.add('hidden');
+    selectedTheme = null;
+}
+
+async function pickDifficulty(level) {
+    if (!selectedTheme) return;
+    document.getElementById('difficulty-modal').classList.add('hidden');
+
     const cards = document.querySelectorAll('.theme-card');
     cards.forEach(c => {
         c.disabled = true;
         c.style.pointerEvents = 'none';
-        if (c.dataset.theme !== theme) {
+        if (c.dataset.theme !== selectedTheme) {
             c.style.opacity = '0.15';
             c.style.transform = 'scale(0.97)';
         } else {
@@ -119,7 +171,7 @@ async function selectTheme(theme) {
         const resp = await fetch('/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme }),
+            body: JSON.stringify({ theme: selectedTheme, difficulty: level }),
         });
         const data = await resp.json();
         if (data.success) {
