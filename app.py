@@ -49,6 +49,41 @@ limiter = Limiter(
 engine = GameEngine()
 
 
+def _session_id() -> str:
+    """Get or create a stable session ID for puzzle caching."""
+    sid = session.get("_cache_id")
+    if not sid:
+        sid = secrets.token_hex(8)
+        session["_cache_id"] = sid
+    return sid
+
+
+def _apply_cached_puzzle(state: GameState, cached: dict) -> GameState:
+    """Apply a pre-generated cached puzzle to the game state."""
+    puzzle = PuzzleState(**cached["puzzle"])
+    state.current_puzzle = puzzle
+    state.puzzles.append(cached["puzzle"])
+    if cached.get("narrative_text"):
+        state.narrative_log.append(cached["narrative_text"])
+    return state
+
+
+def _get_next_puzzle(state: GameState) -> GameState:
+    """Get the next puzzle from cache or generate on-demand."""
+    sid = _session_id()
+    puzzle_idx = state.current_puzzle_index
+
+    # Try cache first
+    cached = puzzle_cache.get_cached_puzzle(sid, puzzle_idx)
+    if cached:
+        app.logger.info("⚡ Using cached puzzle %d", puzzle_idx + 1)
+        return _apply_cached_puzzle(state, cached)
+
+    # Fall back to on-demand generation
+    app.logger.info("🔄 Cache miss for puzzle %d, generating on-demand...", puzzle_idx + 1)
+    return engine.generate_puzzle(state)
+
+
 # ---------------------------------------------------------------------------
 # Helper: sanitize player input (Fix #7)
 # ---------------------------------------------------------------------------
