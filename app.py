@@ -19,8 +19,9 @@ from flask import (
 from PIL import Image
 from dotenv import load_dotenv
 
-from game_engine import GameEngine, GameState, TOTAL_PUZZLES, ROOM_TIME_SECONDS
+from game_engine import GameEngine, GameState, PuzzleState, TOTAL_PUZZLES, ROOM_TIME_SECONDS
 from prompts import THEME_DESCRIPTIONS
+import puzzle_cache
 
 load_dotenv()
 
@@ -28,6 +29,41 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 
 engine = GameEngine()
+
+
+def _session_id() -> str:
+    """Get or create a stable session ID for puzzle caching."""
+    sid = session.get("_cache_id")
+    if not sid:
+        sid = secrets.token_hex(8)
+        session["_cache_id"] = sid
+    return sid
+
+
+def _apply_cached_puzzle(state: GameState, cached: dict) -> GameState:
+    """Apply a pre-generated cached puzzle to the game state."""
+    puzzle = PuzzleState(**cached["puzzle"])
+    state.current_puzzle = puzzle
+    state.puzzles.append(cached["puzzle"])
+    if cached.get("narrative_text"):
+        state.narrative_log.append(cached["narrative_text"])
+    return state
+
+
+def _get_next_puzzle(state: GameState) -> GameState:
+    """Get the next puzzle from cache or generate on-demand."""
+    sid = _session_id()
+    puzzle_idx = state.current_puzzle_index
+
+    # Try cache first
+    cached = puzzle_cache.get_cached_puzzle(sid, puzzle_idx)
+    if cached:
+        app.logger.info("⚡ Using cached puzzle %d", puzzle_idx + 1)
+        return _apply_cached_puzzle(state, cached)
+
+    # Fall back to on-demand generation
+    app.logger.info("🔄 Cache miss for puzzle %d, generating on-demand...", puzzle_idx + 1)
+    return engine.generate_puzzle(state)
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +88,10 @@ def save_game_state(state: GameState):
 @app.route("/")
 def lobby():
     """Lobby page: theme selection."""
+    # Invalidate any cached puzzles from previous game
+    sid = session.get("_cache_id")
+    if sid:
+        puzzle_cache.invalidate_session(sid)
     # Clear any existing game
     session.pop("game_state", None)
     return render_template("lobby.html", themes=THEME_DESCRIPTIONS)
@@ -118,6 +158,10 @@ def start_game():
         state = engine.start_game(theme, difficulty=difficulty)
         state = engine.generate_puzzle(state)
         save_game_state(state)
+
+        # Start background pre-generation of puzzles 2-5
+        sid = _session_id()
+        puzzle_cache.start_precaching(sid, state)
     except Exception as e:
         app.logger.error("Failed to start game: %s", e)
         return jsonify({"error": f"AI is busy — please try again in a moment. ({type(e).__name__})"}), 503
@@ -161,14 +205,28 @@ def submit_answer():
         })
 
     if result.get("next_puzzle"):
-        # Generate next puzzle
-        try:
-            state = engine.generate_puzzle(state)
-        except Exception as e:
-            app.logger.error("Puzzle generation failed: %s", e)
-            # Save state so /next-puzzle can retry
-            save_game_state(state)
-            return jsonify({**result, "needs_retry": True})
+        # Try cache first, fall back to on-demand generation
+        sid = _session_id()
+        next_idx = state.current_puzzle_index
+        cached = puzzle_cache.get_cached_puzzle(sid, next_idx)
+
+        if cached:
+            app.logger.info("⚡ [Answer] Using cached puzzle %d", next_idx + 1)
+            puzzle = PuzzleState(**cached["puzzle"])
+            state.current_puzzle = puzzle
+            state.puzzles.append(puzzle.to_dict())
+            if puzzle.narrative_text:
+                state.narrative_log.append(puzzle.narrative_text)
+        else:
+            app.logger.info("🐢 [Answer] Cache miss for puzzle %d, generating on-demand", next_idx + 1)
+            try:
+                state = engine.generate_puzzle(state)
+            except Exception as e:
+                app.logger.error("Puzzle generation failed: %s", e)
+                # Save state so /next-puzzle can retry
+                save_game_state(state)
+                return jsonify({**result, "needs_retry": True})
+
         save_game_state(state)
         puzzle = state.current_puzzle
         return jsonify({
@@ -271,12 +329,26 @@ def skip_puzzle():
         return jsonify({**result, "redirect": url_for("result")})
 
     if result.get("next_puzzle"):
-        try:
-            state = engine.generate_puzzle(state)
-        except Exception as e:
-            app.logger.error("Puzzle generation after skip failed: %s", e)
-            save_game_state(state)
-            return jsonify({**result, "error_generating": True})
+        # Try cache first
+        sid = _session_id()
+        next_idx = state.current_puzzle_index
+        cached = puzzle_cache.get_cached_puzzle(sid, next_idx)
+
+        if cached:
+            app.logger.info("⚡ [Skip] Using cached puzzle %d", next_idx + 1)
+            puzzle = PuzzleState(**cached["puzzle"])
+            state.current_puzzle = puzzle
+            state.puzzles.append(puzzle.to_dict())
+            if puzzle.narrative_text:
+                state.narrative_log.append(puzzle.narrative_text)
+        else:
+            app.logger.info("🐢 [Skip] Cache miss for puzzle %d, generating on-demand", next_idx + 1)
+            try:
+                state = engine.generate_puzzle(state)
+            except Exception as e:
+                app.logger.error("Puzzle generation after skip failed: %s", e)
+                save_game_state(state)
+                return jsonify({**result, "error_generating": True})
 
         save_game_state(state)
         puzzle = state.current_puzzle
@@ -304,11 +376,22 @@ def next_puzzle():
         save_game_state(state)
         return jsonify({"time_up": True, "redirect": url_for("result")})
 
-    try:
-        state = engine.generate_puzzle(state)
-    except Exception as e:
-        app.logger.error("Retry puzzle generation failed: %s", e)
-        return jsonify({"needs_retry": True})
+    # Try cache first
+    sid = _session_id()
+    cached = puzzle_cache.get_cached_puzzle(sid, state.current_puzzle_index)
+    if cached:
+        app.logger.info("⚡ [Cache HIT] Using cached puzzle %d", state.current_puzzle_index + 1)
+        state.current_puzzle = PuzzleState(**cached["puzzle"])
+        state.puzzles.append(cached["puzzle"])
+        if cached.get("narrative_text"):
+            state.narrative_log.append(cached["narrative_text"])
+    else:
+        app.logger.info("🐢 [Cache MISS] Generating puzzle %d on-demand", state.current_puzzle_index + 1)
+        try:
+            state = engine.generate_puzzle(state)
+        except Exception as e:
+            app.logger.error("Retry puzzle generation failed: %s", e)
+            return jsonify({"needs_retry": True})
 
     save_game_state(state)
     puzzle = state.current_puzzle
@@ -319,6 +402,16 @@ def next_puzzle():
         "remaining_seconds": state.remaining_seconds,
         "narrative_log": state.narrative_log,
     })
+
+
+@app.route("/cache-status", methods=["GET"])
+def cache_status():
+    """Debug endpoint: check puzzle cache status for current session."""
+    sid = session.get("_cache_id")
+    if not sid:
+        return jsonify({"error": "No session"}), 400
+    status = puzzle_cache.get_cache_status(sid)
+    return jsonify(status)
 
 
 @app.route("/time-check", methods=["POST"])

@@ -1,6 +1,6 @@
-"""Groq API client wrapper for ultra-fast text and multimodal interactions.
+"""OpenAI-compatible API client wrapper for text and multimodal interactions.
 
-Uses Groq's LPU Inference Engine for the fastest LLM inference available.
+Uses a custom OpenAI-compatible endpoint.
 """
 
 import json
@@ -10,35 +10,72 @@ import base64
 import time
 import logging
 
-from groq import Groq
-from groq import RateLimitError, APIStatusError
+from openai import OpenAI
+from openai import RateLimitError, APIStatusError
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# Model cascade — Llama 3.3 70B follows instructions best, GPT-OSS 120B as fallback
+# Model cascade — try each in order until one works
+# opus models are high quality (~7.5s) without haiku's hallucination issues
 MODEL_CASCADE = [
-    "llama-3.3-70b-versatile",   # 280 t/s  — best instruction following, production-grade
-    "openai/gpt-oss-120b",      # 500 t/s  — high quality fallback
-    "openai/gpt-oss-20b",       # 1000 t/s — fast last-resort fallback
+    "claude-opus-4.5",       # ~7.5s avg — best quality, reliable for puzzles
+    "claude-opus-4.6",       # ~7.7s avg — newest model fallback
+    "claude-haiku-4.5",      # ~6s avg — fast but can hallucinate, last resort
+    "claude-sonnet-4.5",     # ~20s avg — slow due to server-side reasoning
 ]
 
 # Fast model for simple tasks (answer validation)
-FAST_MODEL = "llama-3.3-70b-versatile"  # 280 t/s — accurate for yes/no decisions
+FAST_MODEL = "claude-haiku-4.5"  # simple yes/no — haiku is fine here
 
 # Vision-capable model
-VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"  # 750 t/s
+VISION_MODEL = "claude-opus-4.5"
 
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 2  # seconds
 
+# Base URL for the OpenAI-compatible endpoint (loaded from environment)
+BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
 
-def _get_client() -> Groq:
-    """Configure and return the Groq client."""
-    api_key = os.environ.get("GROQ_API_KEY")
+
+def _extract_json(text: str) -> dict:
+    """Extract JSON from a response that may be wrapped in markdown code fences."""
+    text = text.strip()
+
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Strip markdown ```json ... ``` fences
+    import re
+    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+
+    # Last resort: find first { ... } block
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(text[start:end + 1])
+        except json.JSONDecodeError:
+            pass
+
+    raise ValueError(f"Could not extract JSON from response: {text[:200]}")
+
+
+def _get_client() -> OpenAI:
+    """Configure and return the OpenAI-compatible client."""
+    api_key = os.environ.get("API_KEY")
     if not api_key:
-        raise RuntimeError("GROQ_API_KEY environment variable is not set")
-    return Groq(api_key=api_key)
+        raise RuntimeError("API_KEY environment variable is not set")
+    return OpenAI(api_key=api_key, base_url=BASE_URL)
 
 
 def _call_with_retry(client, preferred_model, messages, json_mode=False, temperature=0.9, models_to_try=None):
@@ -55,18 +92,28 @@ def _call_with_retry(client, preferred_model, messages, json_mode=False, tempera
     kwargs = {
         "temperature": temperature,
     }
-    if json_mode:
-        kwargs["response_format"] = {"type": "json_object"}
+    # Note: response_format not used — not all OpenAI-compatible endpoints support it.
+    # JSON output is enforced via system prompts instead.
 
     last_error = None
     for model_name in models_to_try:
         for attempt in range(MAX_RETRIES):
             try:
+                logger.info("🔄 Calling %s (attempt %d/%d)...", model_name, attempt + 1, MAX_RETRIES)
+                t0 = time.time()
                 response = client.chat.completions.create(
                     model=model_name,
                     messages=messages,
                     **kwargs,
                 )
+                elapsed = time.time() - t0
+                # Validate we got actual content back
+                content = response.choices[0].message.content if response.choices else None
+                if not content or not content.strip():
+                    logger.error("❌ Empty response from %s after %.1fs", model_name, elapsed)
+                    raise RuntimeError(f"Empty response from {model_name}")
+                logger.info("✅ %s responded in %.1fs (%d chars)", model_name, elapsed, len(content))
+                logger.info("📝 Response preview: %s", content[:150].replace('\n', ' '))
                 return response
             except RateLimitError as e:
                 last_error = e
@@ -94,18 +141,18 @@ def _call_with_retry(client, preferred_model, messages, json_mode=False, tempera
 
 
 def generate_json(system_prompt: str, user_prompt: str, temperature: float = 0.9) -> dict:
-    """Generate structured JSON via Groq."""
+    """Generate structured JSON."""
     client = _get_client()
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-    response = _call_with_retry(client, MODEL_CASCADE[0], messages, json_mode=True, temperature=temperature)
-    return json.loads(response.choices[0].message.content)
+    response = _call_with_retry(client, MODEL_CASCADE[0], messages, temperature=temperature)
+    return _extract_json(response.choices[0].message.content)
 
 
 def generate_text(system_prompt: str, user_prompt: str, temperature: float = 0.9) -> str:
-    """Generate plain text via Groq."""
+    """Generate plain text."""
     client = _get_client()
     messages = [
         {"role": "system", "content": system_prompt},
@@ -141,13 +188,12 @@ def analyze_image(system_prompt: str, user_prompt: str, image: Image.Image, temp
             ],
         },
     ]
-    # Vision models only — no cascade to non-vision models
     response = _call_with_retry(
         client, VISION_MODEL, messages,
-        json_mode=True, temperature=temperature,
+        temperature=temperature,
         models_to_try=[VISION_MODEL],
     )
-    return json.loads(response.choices[0].message.content)
+    return _extract_json(response.choices[0].message.content)
 
 
 def validate_answer(system_prompt: str, user_prompt: str) -> dict:
@@ -157,10 +203,9 @@ def validate_answer(system_prompt: str, user_prompt: str) -> dict:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-    # Use the fastest model for simple validation tasks
     response = _call_with_retry(
         client, FAST_MODEL, messages,
-        json_mode=True, temperature=0.2,
+        temperature=0.2,
         models_to_try=[FAST_MODEL, MODEL_CASCADE[0]],
     )
-    return json.loads(response.choices[0].message.content)
+    return _extract_json(response.choices[0].message.content)

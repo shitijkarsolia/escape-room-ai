@@ -1,4 +1,4 @@
-"""System prompts for Groq LLM interactions."""
+"""System prompts for LLM interactions."""
 
 from typing import Dict, List, Optional
 
